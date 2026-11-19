@@ -171,7 +171,7 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:30px 16px}
   <section id="passo-pix" hidden>
     <div class="card pix">
       <h2 style="margin-top:4px">Pague com PIX para confirmar</h2>
-      <p style="margin:0 0 12px">Seu horário fica segurado por <span class="timer" id="timer">--:--</span></p>
+      <p style="margin:0 0 12px" id="prazo">Pague até <span class="timer" id="timer">--:--</span> para garantir o horário</p>
       <img id="qr" alt="QR Code do PIX" hidden>
       <div id="qr-gerado" style="display:inline-block;padding:10px;background:#fff;border-radius:12px" hidden></div>
       <div class="codigo" id="codigo"></div>
@@ -450,9 +450,12 @@ function mostrarPix(r) {
   window.scrollTo({ top: 0 });
   clearInterval(tick); clearInterval(poll);
   const fim = Date.parse(r.expiraEm);
+  // prazo longo: mostra o horário limite (ex.: "Pague até 17:56"); nos últimos 30 min, mostra a contagem
+  const limite = new Date(fim).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   const atualiza = () => {
     const s = Math.max(0, Math.round((fim - Date.now()) / 1000));
-    $('#timer').textContent = `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+    if (s > 1800) { $('#prazo').innerHTML = `Pague até as <span class="timer">${limite}</span> para garantir o horário`; return; }
+    $('#prazo').innerHTML = `Seu horário fica guardado por mais <span class="timer">${Math.floor(s/60)} min ${String(s%60).padStart(2,'0')} s</span>`;
   };
   atualiza(); tick = setInterval(atualiza, 1000);
   poll = setInterval(verificar, 5000);
