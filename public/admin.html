@@ -37,7 +37,18 @@ h2{font:800 14px var(--display);text-transform:uppercase;letter-spacing:.06em;co
 .riscado{text-decoration:line-through;opacity:.55}
 .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
 .cal .dw{font-size:12px;font-weight:700;color:var(--muted);text-align:center}
-.cal .d{min-height:74px;border:1px solid var(--line);border-radius:10px;padding:4px;background:var(--white);font-size:11px;overflow:hidden}
+.cal .d{min-height:74px;border:1px solid var(--line);border-radius:10px;padding:4px;background:var(--white);font:11px var(--body);overflow:hidden;text-align:left;color:var(--ink);cursor:pointer;display:block;width:100%}
+.cal .d.sel{outline:2px solid var(--sun);outline-offset:-1px}
+.cal .d.hoje b{background:var(--ink);color:var(--paper);border-radius:999px;padding:0 6px}
+.cal .d .dots{display:none;gap:3px;flex-wrap:wrap;margin-top:6px}
+.dots i,.legenda-cal i{display:inline-block;width:8px;height:8px;border-radius:50%}
+i.de{background:var(--sea)}i.dq{background:var(--red)}i.df{background:#B9A98E}
+.legenda-cal{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:10px}
+.legenda-cal i{margin-right:4px}
+body{-webkit-text-size-adjust:100%}
+input,select,textarea{font-size:16px}
+.b{min-height:34px}
+
 .cal .d b{font-size:13px}
 .cal .d .ev{background:var(--sea);color:#fff;border-radius:5px;padding:1px 4px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cal .d .qd{background:var(--red);color:#fff;border-radius:5px;padding:1px 4px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -57,7 +68,18 @@ textarea{min-height:120px;font:13px ui-monospace,Menlo,monospace}
 .resumo .card{margin:0}.resumo b{font:900 22px var(--display);display:block}
 .teste{background:#FFF4D6;border:1px solid #F0D58A;color:#6B4E00;border-radius:10px;padding:8px 12px;font-size:13px;margin-bottom:10px}
 [hidden]{display:none!important}
-@media (max-width:560px){.item{grid-template-columns:1fr}.item .acoes{justify-content:flex-start}.grid2{grid-template-columns:1fr}.cal .d{min-height:58px;font-size:10px}}
+@media (max-width:640px){
+  .wrap{padding:0 12px}
+  .item{grid-template-columns:1fr;gap:6px}.item .acoes{justify-content:flex-start}
+  .item .acoes .b{padding:8px 14px;font-size:14px}
+  .grid2{grid-template-columns:1fr}
+  .cal{gap:3px}.cal .d{min-height:52px;padding:4px 3px;text-align:center}
+  .cal .d .txt{display:none}.cal .d .dots{display:flex;justify-content:center}
+  .resumo{grid-template-columns:1fr 1fr}.resumo b{font-size:19px}
+  header b{font-size:16px}#eu-nome{display:none}#sair{margin-left:auto!important}
+  nav{margin:0 -12px;padding:12px}
+  .btn{width:100%}
+}
 </style>
 </head>
 <body>
@@ -91,7 +113,9 @@ textarea{min-height:120px;font:13px ui-monospace,Menlo,monospace}
     <div class="card">
       <div class="cal-head"><button class="b" id="c-ant">‹</button><b id="c-nome"></b><button class="b" id="c-prox">›</button></div>
       <div class="cal" id="cal"></div>
+      <div class="legenda-cal"><span><i class="de"></i>Evento</span><span><i class="dq"></i>Quadra</span><span><i class="df"></i>Fixo</span></div>
     </div>
+    <div class="card dia" id="cal-dia" hidden></div>
   </section>
 
   <section id="aba-nova" hidden>
@@ -298,15 +322,15 @@ function itemFixo(f) {
     <div class="info"><span class="tag t-fixo">Fixo</span><b>${esc(f.nome)}</b> · ${f.quadrasNum ? nomeQ(f.quadrasNum) : `${f.quadras} quadra${f.quadras>1?'s':''}`}${f.cedeAoEvento ? '<small>Não acontece: evento da arena neste dia</small>' : ''}${f.cancelado ? '<small>Cancelado neste dia</small>' : ''}</div>
     <div class="acoes">${f.cedeAoEvento ? '' : `<button class="b" data-fixo="${f.fixoId}" data-data="${f.data}" data-cancelar="${!f.cancelado}">${f.cancelado ? 'Reativar' : 'Cancelar neste dia'}</button>`}</div></div>`;
 }
-function bindAcoes() {
+function bindAcoes(depois = carregarAgenda) {
   document.querySelectorAll('[data-acao]').forEach((b) => b.onclick = async () => {
     if (b.dataset.acao === 'cancelar' && !confirm('Cancelar esta reserva? O horário fica livre de novo.')) return;
     await api(`/admin/api/reservas/${b.dataset.id}`, { method: 'POST', body: JSON.stringify({ acao: b.dataset.acao }) });
-    carregarAgenda();
+    depois();
   });
   document.querySelectorAll('[data-fixo]').forEach((b) => b.onclick = async () => {
     await api('/admin/api/fixo', { method: 'POST', body: JSON.stringify({ data: b.dataset.data, fixoId: b.dataset.fixo, cancelar: b.dataset.cancelar === 'true' }) });
-    carregarAgenda();
+    depois();
   });
 }
 
@@ -315,21 +339,41 @@ let cAno, cMes;
 { const h = hojeStr().split('-').map(Number); cAno = h[0]; cMes = h[1]; }
 $('#c-ant').onclick = () => { cMes--; if (cMes < 1) { cMes = 12; cAno--; } carregarCal(); };
 $('#c-prox').onclick = () => { cMes++; if (cMes > 12) { cMes = 1; cAno++; } carregarCal(); };
+let calDados = null, calSel = null;
 async function carregarCal() {
   const de = `${cAno}-${String(cMes).padStart(2,'0')}-01`;
   const n = new Date(cAno, cMes, 0).getDate();
   const ate = `${cAno}-${String(cMes).padStart(2,'0')}-${n}`;
   const j = await api(`/admin/api/reservas?de=${de}&ate=${ate}`);
+  calDados = j;
   $('#c-nome').textContent = `${MESES[cMes-1]} ${cAno}`;
   let h = ['D','S','T','Q','Q','S','S'].map((d) => `<div class="dw">${d}</div>`).join('');
   for (let i = 0; i < new Date(cAno, cMes-1, 1).getDay(); i++) h += '<span></span>';
+  const hoje = hojeStr();
   for (let d = 1; d <= n; d++) {
     const ds = `${cAno}-${String(cMes).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const rs = j.reservas.filter((r) => r.data === ds && ['confirmada','pendente','conflito'].includes(r.status));
     const fx = j.fixos.filter((f) => f.data === ds && !f.cancelado && !f.cedeAoEvento);
-    h += `<div class="d"><b>${d}</b>${rs.filter((r)=>r.tipo!=='quadra').map((r) => `<div class="ev">${esc(r.resp || (r.tipo==='bloqueio'?'Bloqueio':'Evento'))}</div>`).join('')}${rs.filter((r)=>r.tipo==='quadra').map((r) => `<div class="qd">${curtoQ(r.quadras_num)} ${r.inicio} ${esc((r.resp||'').split(' ')[0])}</div>`).join('')}${fx.map((f) => `<div class="fx">${curtoQ(f.quadrasNum)} ${f.inicio} ${esc(f.nome)}</div>`).join('')}</div>`;
+    const ev = rs.filter((r)=>r.tipo!=='quadra'), qd = rs.filter((r)=>r.tipo==='quadra');
+    const dots = `<div class="dots">${ev.map(() => '<i class="de"></i>').join('')}${qd.map(() => '<i class="dq"></i>').join('')}${fx.map(() => '<i class="df"></i>').join('')}</div>`;
+    h += `<button type="button" class="d${ds === calSel ? ' sel' : ''}${ds === hoje ? ' hoje' : ''}" data-dia="${ds}"><b>${d}</b>${dots}<div class="txt">${ev.map((r) => `<div class="ev">${esc(r.resp || (r.tipo==='bloqueio'?'Bloqueio':'Evento'))}</div>`).join('')}${qd.map((r) => `<div class="qd">${curtoQ(r.quadras_num)} ${r.inicio} ${esc((r.resp||'').split(' ')[0])}</div>`).join('')}${fx.map((f) => `<div class="fx">${curtoQ(f.quadrasNum)} ${f.inicio} ${esc(f.nome)}</div>`).join('')}</div></button>`;
   }
   $('#cal').innerHTML = h;
+  document.querySelectorAll('#cal [data-dia]').forEach((b) => b.onclick = () => { calSel = b.dataset.dia; document.querySelectorAll('#cal .d').forEach((x) => x.classList.toggle('sel', x === b)); renderCalDia(); $('#cal-dia').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  renderCalDia();
+}
+function renderCalDia() {
+  const box = $('#cal-dia');
+  if (!calSel || !calDados || !calSel.startsWith(`${cAno}-${String(cMes).padStart(2,'0')}`)) { box.hidden = true; return; }
+  const itens = [
+    ...calDados.reservas.filter((r) => r.data === calSel).map((r) => ({ ord: r.inicio || '00:00', html: itemReserva(r) })),
+    ...calDados.fixos.filter((f) => f.data === calSel).map((f) => ({ ord: f.inicio, html: itemFixo(f) })),
+  ].sort((x, y) => x.ord.localeCompare(y.ord));
+  box.innerHTML = `<h3>${fmtDia(calSel)}</h3>${itens.length ? itens.map((i) => i.html).join('') : '<p class="vazio">Nada marcado neste dia.</p>'}
+    <button class="b pri" type="button" id="cal-nova" style="margin-top:10px">+ Nova reserva neste dia</button>`;
+  box.hidden = false;
+  bindAcoes(carregarCal);
+  $('#cal-nova').onclick = () => { $('#n-data').value = calSel; document.querySelector('nav button[data-aba=nova]').click(); };
 }
 
 // ---------- nova reserva ----------

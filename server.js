@@ -155,7 +155,13 @@ async function criarReservaSite(body, ip) {
       const livres = L.horariosQuadra(c, data, dur, quadras, doDia, agora);
       if (!livres.includes(body.inicio)) throw Object.assign(new Error('Esse horário acabou de ser ocupado. Escolha outro.'), { status: 409 });
       r = { ...r, inicio: body.inicio, fim: L.toHHMM(L.toMin(body.inicio) + dur), quadras, valor: L.precoQuadra(c, quadras, dur) };
-      const qs = L.escolherQuadras(c, L.ocupacaoDoDia(c, data, doDia, agora), L.toMin(r.inicio), L.toMin(r.fim), quadras);
+      const ocDia = L.ocupacaoDoDia(c, data, doDia, agora);
+      let qs = L.escolherQuadras(c, ocDia, L.toMin(r.inicio), L.toMin(r.fim), quadras);
+      // o cliente tocou numa quadra específica na grade: respeita se ela estiver livre
+      const pedida = Number(body.quadra);
+      if (quadras === 1 && [1, 2].includes(pedida) && pedida <= c.totalQuadras) {
+        if (L.quadrasLivresLista(ocDia.ocup, L.toMin(r.inicio), L.toMin(r.fim)).includes(pedida)) qs = [pedida];
+      }
       if (!qs) throw Object.assign(new Error('Esse horário acabou de ser ocupado. Escolha outro.'), { status: 409 });
       r.quadras_num = qs.join(',');
       r.valor_pix = r.valor;

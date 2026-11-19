@@ -90,13 +90,17 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:30px 16px}
 [hidden]{display:none!important}
 .grade{display:grid;grid-template-columns:52px 1fr 1fr;gap:3px 6px;font-size:13px}
 .grade .th{font:800 13px var(--display);text-transform:uppercase;text-align:center;color:var(--ink);padding-bottom:4px}
-.grade .h{color:var(--muted);font-weight:600;text-align:right;padding-right:2px;line-height:22px}
+.grade .h{color:var(--muted);font-weight:600;text-align:right;padding-right:2px;line-height:36px}
 .grade .c{display:grid;grid-template-columns:1fr 1fr;gap:2px}
-.grade .c span{height:22px;border-radius:5px;background:#EAF3EC;border:1px solid #CFE5D5}
+.grade .c span,.grade .c button{height:36px;border-radius:8px;background:#EAF3EC;border:1px solid #CFE5D5;padding:0;font:600 12px var(--body);color:#5E8C6B}
+.grade .c button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.grade .c button:active{transform:scale(.96)}
+.grade .c span.passado{background:#F3EEE4;border-color:#EDE5D6}
+.grade-msg{margin-top:10px;font-weight:600;color:var(--bad);font-size:14px}
 .grade .c span{display:flex;align-items:center;justify-content:center}
 .grade .c span.x{background:#E9DCC6;border-color:#E9DCC6}
 .grade .c span.x::after{content:"✕";font:800 12px/1 var(--body);color:#9C8462}
-.grade .c span.sel{background:var(--sun);border-color:var(--sun)}
+.grade .c .sel{background:var(--sun)!important;border-color:var(--sun)!important;color:#fff!important}
 .grade-leg{display:flex;gap:14px;font-size:13px;color:var(--muted);margin-top:8px}
 .grade-leg i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px}
 </style>
@@ -134,7 +138,7 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:30px 16px}
 
     <div id="bloco-quadra" hidden>
       <h2>Horários do dia</h2>
-      <div class="card"><div class="grade" id="grade"></div>
+      <div class="card"><p class="vazio" style="margin:0 0 10px;font-size:14px">Toque num horário livre para começar a sua reserva.</p><div class="grade" id="grade"></div><div class="grade-msg" id="grade-msg" hidden></div>
         <div class="grade-leg"><span><i style="background:#EAF3EC;border:1px solid #CFE5D5"></i>Livre</span><span><i style="background:#E9DCC6;font:800 9px/12px var(--body);color:#9C8462;text-align:center;font-style:normal">✕</i>Reservado</span><span><i style="background:var(--sun)"></i>Sua reserva</span></div></div>
       <h2>2. Quanto tempo e quantas quadras</h2>
       <div class="chips" id="duracoes"></div>
@@ -208,7 +212,7 @@ const fmtDur = (m) => m % 60 ? `${Math.floor(m/60)}h${m%60}` : `${m/60}h`;
 const fmtData = (d) => { const [y,m,dd] = d.split('-'); const w = new Date(`${d}T12:00:00`).toLocaleDateString('pt-BR',{weekday:'long'}); return `${w}, ${dd}/${m}/${y}`; };
 const somaMin = (hhmm, min) => { const [h,m] = hhmm.split(':').map(Number); const t = h*60+m+min; return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`; };
 
-const st = { tipo: 'quadra', cfg: null, ano: 0, mes: 0, dias: [], data: null, dia: null, dur: 120, quadras: 1, inicio: null, espaco: null, reserva: null };
+const st = { quadraEscolhida: null, tipo: 'quadra', cfg: null, ano: 0, mes: 0, dias: [], data: null, dia: null, dur: 120, quadras: 1, inicio: null, espaco: null, reserva: null };
 const guarda = { get(){ try { return localStorage.getItem('arena_reserva'); } catch { return null; } }, set(v){ try { v ? localStorage.setItem('arena_reserva', v) : localStorage.removeItem('arena_reserva'); } catch {} } };
 
 async function api(url, opts) {
@@ -224,9 +228,14 @@ async function iniciar() {
   const [y, m] = st.cfg.hoje.split('-').map(Number);
   st.ano = y; st.mes = m;
   if (st.cfg.duracoes.includes(120)) st.dur = 120; else st.dur = st.cfg.duracoes[0];
+  const qp = new URLSearchParams(location.search);
+  if (qp.get('tipo') === 'evento') { st.tipo = 'evento'; document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-pressed', x.dataset.tipo === 'evento')); }
+  const qData = /^\d{4}-\d{2}-\d{2}$/.test(qp.get('data') || '') ? qp.get('data') : null;
+  if (qData) { st.ano = Number(qData.slice(0, 4)); st.mes = Number(qData.slice(5, 7)); }
   const pend = guarda.get();
   if (pend) { try { const r = await api(`/api/reservas/${pend}`); if (r.status === 'pendente') return mostrarPix(r); if (r.status === 'confirmada') return mostrarOk(r); } catch {} guarda.set(null); }
   await carregarMes();
+  if (qData && st.dias.some((d) => d.data === qData && diaLivre(d))) await escolherDia(qData);
 }
 
 document.querySelectorAll('.tabs button').forEach((b) => b.onclick = () => {
@@ -301,7 +310,7 @@ function renderDia() {
     $('#horarios').innerHTML = hs.length
       ? hs.map((h) => `<button type="button" class="chip hora" data-h="${h}" aria-pressed="${h===st.inicio}">${h}</button>`).join('')
       : '<p class="vazio">Sem horário livre com essa combinação. Tente menos tempo, 1 quadra ou outro dia.</p>';
-    document.querySelectorAll('#horarios .chip').forEach((b) => b.onclick = () => { st.inicio = b.dataset.h; renderDia(); $('#bloco-dados').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    document.querySelectorAll('#horarios .chip').forEach((b) => b.onclick = () => { st.inicio = b.dataset.h; st.quadraEscolhida = null; $('#grade-msg').hidden = true; renderDia(); $('#bloco-dados').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     $('#titulo-dados').textContent = '4. Seus dados';
   } else {
     const nomes = { arena: ['Arena toda', 'Quadras, barracão, cozinha, quiosque e área verde'], quiosque: ['Quiosque', st.dia.fimDeSemana ? 'Espaço do quiosque' : 'Espaço do quiosque · a partir das 17h'] };
@@ -324,10 +333,17 @@ function quadrasPrevistas() {
   if (st.quadras >= st.dia.totalQuadras) return Array.from({ length: st.dia.totalQuadras }, (_, k) => k + 1);
   const ini = st.inicio, fim = somaMin(st.inicio, st.dur);
   const linhas = st.dia.grade.filter((g) => g.hora >= ini && g.hora < fim);
-  for (let c = 1; c <= st.dia.totalQuadras; c++) if (linhas.every((g) => !g[`q${c}`])) return [c];
+  const livre = (c) => linhas.length === st.dur / 30 && linhas.every((g) => !g[`q${c}`]);
+  if (st.quadraEscolhida && livre(st.quadraEscolhida)) return [st.quadraEscolhida];
+  for (let c = 1; c <= st.dia.totalQuadras; c++) if (livre(c)) return [c];
   return [];
 }
 const nomeQuadras = (arr) => arr.length > 1 ? `Quadras ${arr.join(' e ')}` : `Quadra ${arr[0]}`;
+function passou(hora) {
+  if (st.data !== st.cfg.hoje) return false;
+  const d = new Date(); const agora = d.toLocaleTimeString('pt-BR', { timeZone: 'America/Campo_Grande', hour: '2-digit', minute: '2-digit', hour12: false });
+  return hora <= agora;
+}
 function renderGrade() {
   const g = st.dia.grade; const sel = quadrasPrevistas();
   const fim = st.inicio ? somaMin(st.inicio, st.dur) : null;
@@ -337,11 +353,40 @@ function renderGrade() {
     const a = g[k], b = g[k + 1] || null;
     h += `<div class="h">${a.hora.slice(0, 2)}h</div>`;
     for (let c = 1; c <= st.dia.totalQuadras; c++) {
-      const cel = (x) => { if (!x) return '<span style="visibility:hidden"></span>'; const meu = st.inicio && sel.includes(c) && x.hora >= st.inicio && x.hora < fim; return `<span class="${meu ? 'sel' : x[`q${c}`] ? 'x' : ''}" title="${x.hora}"></span>`; };
+      const cel = (x) => {
+        if (!x) return '<span style="visibility:hidden"></span>';
+        const meu = st.inicio && sel.includes(c) && x.hora >= st.inicio && x.hora < fim;
+        if (meu) return `<button type="button" class="sel" data-h="${x.hora}" data-q="${c}" aria-label="Quadra ${c}, ${x.hora}, sua reserva">${x.hora === st.inicio ? x.hora : ''}</button>`;
+        if (x[`q${c}`]) return `<span class="x" aria-label="Quadra ${c}, ${x.hora}, reservado"></span>`;
+        if (passou(x.hora)) return '<span class="passado"></span>';
+        return `<button type="button" data-h="${x.hora}" data-q="${c}" aria-label="Quadra ${c}, ${x.hora}, livre"></button>`;
+      };
       h += `<div class="c">${cel(a)}${cel(b)}</div>`;
     }
   }
   $('#grade').innerHTML = h;
+  document.querySelectorAll('#grade button[data-h]').forEach((bt) => bt.onclick = () => tocarGrade(bt.dataset.h, Number(bt.dataset.q)));
+}
+function cabe(hora, c) {
+  const fim = somaMin(hora, st.dur);
+  const linhas = st.dia.grade.filter((g) => g.hora >= hora && g.hora < fim);
+  return linhas.length === st.dur / 30 && linhas.every((g) => !g[`q${c}`]);
+}
+function tocarGrade(hora, c) {
+  const msg = $('#grade-msg'); msg.hidden = true; msg.style.color = '';
+  if (st.quadras >= 2) {
+    if (!st.dia.quadra.horarios.includes(hora)) { msg.textContent = `As duas quadras não ficam livres por ${fmtDur(st.dur)} a partir das ${hora}.`; msg.hidden = false; return; }
+    st.quadraEscolhida = null;
+  } else if (cabe(hora, c)) st.quadraEscolhida = c;
+  else {
+    const outra = [1, 2].find((q) => q !== c && cabe(hora, q));
+    if (!outra) { msg.textContent = `Não cabem ${fmtDur(st.dur)} a partir das ${hora}. Escolha outro horário ou menos tempo.`; msg.hidden = false; return; }
+    st.quadraEscolhida = outra;
+    msg.textContent = `A Quadra ${c} não fica livre ${fmtDur(st.dur)} seguidas a partir das ${hora}, então separamos a Quadra ${outra}.`; msg.hidden = false; msg.style.color = 'var(--muted)';
+  }
+  st.inicio = hora;
+  renderDia();
+  $('#bloco-dados').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function linhasResumo() {
@@ -365,7 +410,7 @@ $('#btn-pix').onclick = async () => {
   const btn = $('#btn-pix'); const err = $('#erro');
   err.hidden = true;
   const body = { tipo: st.tipo, data: st.data, nome: $('#nome').value.trim(), telefone: $('#tel').value.trim(), email: $('#email').value.trim() };
-  if (st.tipo === 'quadra') Object.assign(body, { dur: st.dur, quadras: st.quadras, inicio: st.inicio });
+  if (st.tipo === 'quadra') Object.assign(body, { dur: st.dur, quadras: st.quadras, inicio: st.inicio, quadra: st.quadras === 1 ? (quadrasPrevistas()[0] || null) : null });
   else Object.assign(body, { espaco: st.espaco, obs: $('#obs').value.trim() });
   if (body.nome.length < 3) { err.textContent = 'Informe seu nome.'; err.hidden = false; return; }
   if (body.telefone.replace(/\D/g,'').length < 10) { err.textContent = 'Informe um telefone com DDD.'; err.hidden = false; return; }
