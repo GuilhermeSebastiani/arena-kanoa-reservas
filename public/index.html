@@ -93,7 +93,9 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:30px 16px}
 .grade .h{color:var(--muted);font-weight:600;text-align:right;padding-right:2px;line-height:22px}
 .grade .c{display:grid;grid-template-columns:1fr 1fr;gap:2px}
 .grade .c span{height:22px;border-radius:5px;background:#EAF3EC;border:1px solid #CFE5D5}
+.grade .c span{display:flex;align-items:center;justify-content:center}
 .grade .c span.x{background:#E9DCC6;border-color:#E9DCC6}
+.grade .c span.x::after{content:"✕";font:800 12px/1 var(--body);color:#9C8462}
 .grade .c span.sel{background:var(--sun);border-color:var(--sun)}
 .grade-leg{display:flex;gap:14px;font-size:13px;color:var(--muted);margin-top:8px}
 .grade-leg i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px}
@@ -133,7 +135,7 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:30px 16px}
     <div id="bloco-quadra" hidden>
       <h2>Horários do dia</h2>
       <div class="card"><div class="grade" id="grade"></div>
-        <div class="grade-leg"><span><i style="background:#EAF3EC;border:1px solid #CFE5D5"></i>Livre</span><span><i style="background:#E9DCC6"></i>Ocupado</span><span><i style="background:var(--sun)"></i>Sua reserva</span></div></div>
+        <div class="grade-leg"><span><i style="background:#EAF3EC;border:1px solid #CFE5D5"></i>Livre</span><span><i style="background:#E9DCC6;font:800 9px/12px var(--body);color:#9C8462;text-align:center;font-style:normal">✕</i>Reservado</span><span><i style="background:var(--sun)"></i>Sua reserva</span></div></div>
       <h2>2. Quanto tempo e quantas quadras</h2>
       <div class="chips" id="duracoes"></div>
       <div class="chips" id="nquadras" style="margin-top:10px"></div>
@@ -330,6 +332,7 @@ function renderGrade() {
   const g = st.dia.grade; const sel = quadrasPrevistas();
   const fim = st.inicio ? somaMin(st.inicio, st.dur) : null;
   let h = `<div></div>${Array.from({ length: st.dia.totalQuadras }, (_, k) => `<div class="th">Quadra ${k + 1}</div>`).join('')}`;
+  h += `<div></div>${Array.from({ length: st.dia.totalQuadras }, () => '<div class="c" style="font-size:11px;color:var(--muted);text-align:center"><div>:00</div><div>:30</div></div>').join('')}`;
   for (let k = 0; k < g.length; k += 2) {
     const a = g[k], b = g[k + 1] || null;
     h += `<div class="h">${a.hora.slice(0, 2)}h</div>`;
