@@ -75,6 +75,7 @@ textarea{min-height:120px;font:13px ui-monospace,Menlo,monospace}
     <button data-aba="agenda" aria-pressed="true">Agenda</button>
     <button data-aba="cal">Calendário</button>
     <button data-aba="nova">Nova reserva</button>
+    <button data-aba="fixos">Fixos</button>
     <button data-aba="config">Configurações</button>
     <button data-aba="usu">Usuários</button>
   </nav>
@@ -118,8 +119,33 @@ textarea{min-height:120px;font:13px ui-monospace,Menlo,monospace}
           <div><label>Situação</label><select id="n-status"><option value="confirmada">Confirmada (paga)</option><option value="pendente">A receber (segura a data)</option></select></div>
           <div><label>Observação</label><input id="n-obs"></div>
         </div>
+        <label id="n-fixo-box" style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="n-fixo" style="width:auto"> Horário fixo: repete toda semana nesse dia e horário</label>
         <button class="btn">Salvar reserva</button>
         <div class="msg" id="n-msg"></div>
+      </form>
+    </div>
+  </section>
+
+  <section id="aba-fixos" hidden>
+    <div class="card"><h2 style="margin-top:0">Horários fixos (toda semana)</h2>
+      <p class="vazio" style="margin-top:0">Para cancelar um fixo só num dia, use o botão na Agenda. Aqui é para mudar o fixo de vez.</p>
+      <div id="fx-lista"></div></div>
+    <div class="card">
+      <h2 style="margin-top:0" id="fx-titulo">Novo fixo</h2>
+      <form id="f-fixo">
+        <input type="hidden" id="fx-id">
+        <div class="grid2">
+          <div><label>Nome / grupo</label><input id="fx-nome" placeholder="Ex.: Thaila"></div>
+          <div><label>Quadras</label><select id="fx-q"><option value="1">1 quadra</option><option value="2">2 quadras</option></select></div>
+        </div>
+        <label>Dia(s) da semana</label>
+        <div id="fx-dias" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+        <div class="grid2">
+          <div><label>Início</label><input type="time" id="fx-ini" step="1800"></div>
+          <div><label>Fim</label><input type="time" id="fx-fim" step="1800"></div>
+        </div>
+        <button class="btn">Salvar fixo</button> <button type="button" class="b" id="fx-cancelar" hidden style="margin-left:8px">Cancelar edição</button>
+        <div class="msg" id="fx-msg"></div>
       </form>
     </div>
   </section>
@@ -149,8 +175,6 @@ textarea{min-height:120px;font:13px ui-monospace,Menlo,monospace}
         </div>
         <label>Feriados (um por linha, AAAA-MM-DD)</label>
         <textarea id="c-feriados"></textarea>
-        <label>Horários fixos (dias: 0=dom, 1=seg … 6=sáb)</label>
-        <textarea id="c-fixos" style="min-height:160px"></textarea>
         <button class="btn">Salvar configurações</button>
         <div class="msg" id="c-msg"></div>
       </form>
@@ -210,11 +234,12 @@ $('#sair').onclick = async () => { await fetch('/admin/logout', { method: 'POST'
 
 document.querySelectorAll('nav button').forEach((b) => b.onclick = () => {
   document.querySelectorAll('nav button').forEach((x) => x.setAttribute('aria-pressed', x === b));
-  ['agenda','cal','nova','config','usu'].forEach((a) => $(`#aba-${a}`).hidden = a !== b.dataset.aba);
+  ['agenda','cal','nova','fixos','config','usu'].forEach((a) => $(`#aba-${a}`).hidden = a !== b.dataset.aba);
   if (b.dataset.aba === 'agenda') carregarAgenda();
   if (b.dataset.aba === 'cal') carregarCal();
   if (b.dataset.aba === 'config') carregarCfg();
   if (b.dataset.aba === 'usu') carregarUsu();
+  if (b.dataset.aba === 'fixos') carregarFixos();
 });
 
 async function abrir() {
@@ -312,6 +337,7 @@ function ajustaForm() {
   $('#n-q-box').hidden = t === 'evento';
   $('#n-esp-box').hidden = t === 'quadra';
   $('#n-horas').hidden = false;
+  $('#n-fixo-box').hidden = t !== 'quadra';
   [...$('#n-esp').options].forEach((o) => o.hidden = (t === 'evento' && o.value === 'tudo'));
   if (t === 'evento' && $('#n-esp').value === 'tudo') $('#n-esp').value = 'arena';
 }
@@ -324,6 +350,14 @@ $('#f-nova').onsubmit = async (e) => {
     valor: $('#n-valor').value !== '' ? Number($('#n-valor').value) : null, resp: $('#n-resp').value, telefone: $('#n-tel').value,
     status: $('#n-status').value, obs: $('#n-obs').value };
   if (t === 'bloqueio' && body.espaco === 'tudo') { body.inicio = null; body.fim = null; }
+  if (t === 'quadra' && $('#n-fixo').checked) {
+    try {
+      await salvarFixo({ nome: body.resp, quadras: body.quadras, inicio: body.inicio, fim: body.fim, dias: [new Date(`${body.data}T12:00:00`).getDay()] }, $('#n-msg'));
+      if ($('#n-msg').className === 'msg ok') $('#n-msg').textContent = 'Fixo criado: aparece toda semana na Agenda (aba Fixos para mudar).';
+      $('#f-nova').reset(); $('#n-data').value = body.data; ajustaForm();
+    } catch (er) { $('#n-msg').className = 'msg err'; $('#n-msg').textContent = er.message; }
+    return;
+  }
   try {
     await api('/admin/api/reservas', { method: 'POST', body: JSON.stringify(body) });
     $('#n-msg').className = 'msg ok'; $('#n-msg').textContent = 'Reserva salva.';
@@ -339,22 +373,57 @@ async function carregarCfg() {
   $('#c-q-sem').value = c.precos.quiosque.semana; $('#c-q-fds').value = c.precos.quiosque.fimDeSemana;
   $('#c-sinal').value = c.sinalEventoPct; $('#c-hold').value = c.holdMin;
   $('#c-feriados').value = (c.feriados || []).join('\n');
-  $('#c-fixos').value = JSON.stringify(c.fixos, null, 2);
 }
 $('#f-cfg').onsubmit = async (e) => {
   e.preventDefault();
   try {
-    const fixos = JSON.parse($('#c-fixos').value);
     const afds = Number($('#c-a-fds').value);
     const body = {
       valorHora: Number($('#c-hora').value), salarioMinimo: Number($('#c-sm').value), abre: $('#c-abre').value, fecha: $('#c-fecha').value,
       precos: { arena: { semana: Number($('#c-a-sem').value), fimDeSemana: afds ? afds : 'salarioMinimo' }, quiosque: { semana: Number($('#c-q-sem').value), fimDeSemana: Number($('#c-q-fds').value) } },
       sinalEventoPct: Number($('#c-sinal').value), holdMin: Number($('#c-hold').value),
-      feriados: $('#c-feriados').value.split(/\s+/).filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x)), fixos,
+      feriados: $('#c-feriados').value.split(/\s+/).filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x)),
     };
     await api('/admin/api/config', { method: 'PUT', body: JSON.stringify(body) });
     $('#c-msg').className = 'msg ok'; $('#c-msg').textContent = 'Configurações salvas.';
   } catch (er) { $('#c-msg').className = 'msg err'; $('#c-msg').textContent = er.message.includes('JSON') ? 'Os horários fixos têm um erro de formatação.' : er.message; }
+};
+
+// ---------- fixos ----------
+const DIAS = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+$('#fx-dias').innerHTML = DIAS.map((d, i) => `<label style="margin:0;display:flex;gap:4px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-weight:600"><input type="checkbox" value="${i}" style="width:auto">${d.slice(0,3)}</label>`).join('');
+let fixosAtuais = [];
+async function carregarFixos() {
+  const c = await api('/admin/api/config');
+  fixosAtuais = c.fixos || [];
+  $('#fx-lista').innerHTML = fixosAtuais.length ? fixosAtuais.map((f) => `<div class="item"><div class="hora">${f.inicio}–${f.fim}</div>
+    <div class="info"><b>${esc(f.nome)}</b> · ${f.quadras} quadra${f.quadras>1?'s':''}<small>${f.dias.map((d) => DIAS[d]).join(', ')}</small></div>
+    <div class="acoes"><button class="b" data-fx-ed="${f.id}">Editar</button><button class="b dan" data-fx-rm="${f.id}">Remover</button></div></div>`).join('') : '<p class="vazio">Nenhum fixo.</p>';
+  document.querySelectorAll('[data-fx-rm]').forEach((b) => b.onclick = async () => {
+    if (!confirm('Remover este fixo de todas as semanas?')) return;
+    await api(`/admin/api/fixos/${b.dataset.fxRm}`, { method: 'DELETE' }); carregarFixos();
+  });
+  document.querySelectorAll('[data-fx-ed]').forEach((b) => b.onclick = () => {
+    const f = fixosAtuais.find((x) => x.id === b.dataset.fxEd);
+    $('#fx-id').value = f.id; $('#fx-nome').value = f.nome; $('#fx-q').value = String(f.quadras); $('#fx-ini').value = f.inicio; $('#fx-fim').value = f.fim;
+    document.querySelectorAll('#fx-dias input').forEach((i) => i.checked = f.dias.includes(Number(i.value)));
+    $('#fx-titulo').textContent = `Editar fixo: ${f.nome}`; $('#fx-cancelar').hidden = false;
+    $('#f-fixo').scrollIntoView({ behavior: 'smooth' });
+  });
+}
+function limparFixo() { $('#f-fixo').reset(); $('#fx-id').value = ''; $('#fx-titulo').textContent = 'Novo fixo'; $('#fx-cancelar').hidden = true; }
+$('#fx-cancelar').onclick = limparFixo;
+async function salvarFixo(body, msgEl) {
+  const r = await api('/admin/api/fixos', { method: 'POST', body: JSON.stringify(body) });
+  msgEl.className = r.aviso ? 'msg err' : 'msg ok'; msgEl.textContent = r.aviso || 'Fixo salvo.';
+}
+$('#f-fixo').onsubmit = async (e) => {
+  e.preventDefault();
+  try {
+    await salvarFixo({ id: $('#fx-id').value || undefined, nome: $('#fx-nome').value, quadras: Number($('#fx-q').value), inicio: $('#fx-ini').value, fim: $('#fx-fim').value,
+      dias: [...document.querySelectorAll('#fx-dias input:checked')].map((i) => Number(i.value)) }, $('#fx-msg'));
+    limparFixo(); carregarFixos();
+  } catch (er) { $('#fx-msg').className = 'msg err'; $('#fx-msg').textContent = er.message; }
 };
 
 // ---------- usuários ----------

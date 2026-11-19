@@ -431,6 +431,35 @@ async function rotear(req, res) {
       await salvarCfg({ ...c, fixosCancelados: [...set].sort() });
       return send(res, 200, { ok: true });
     }
+    if (M === 'POST' && p === '/admin/api/fixos') {
+      // cria ou edita um horário fixo (toda semana)
+      const b = await lerJSON(req);
+      const dias = (Array.isArray(b.dias) ? b.dias : [b.dias]).map(Number).filter((d) => d >= 0 && d <= 6);
+      const hh = /^\d{2}:\d{2}$/;
+      if (!String(b.nome || '').trim()) return erro(res, 400, 'Informe o nome do fixo.');
+      if (!dias.length) return erro(res, 400, 'Escolha o dia da semana.');
+      if (!hh.test(b.inicio || '') || !hh.test(b.fim || '') || b.fim <= b.inicio) return erro(res, 400, 'Confira início e fim.');
+      const quadras = Number(b.quadras) === 2 ? 2 : 1;
+      const fixo = { id: b.id || `${L.toMin(b.inicio)}-${Date.now().toString(36)}`, nome: String(b.nome).trim().slice(0, 60), dias, inicio: b.inicio, fim: b.fim, quadras };
+      if (b.valorHora !== undefined && b.valorHora !== '' && b.valorHora !== null) fixo.valorHora = Number(b.valorHora);
+      const fixos = (c.fixos || []).filter((f) => f.id !== fixo.id);
+      fixos.push(fixo);
+      fixos.sort((a, z) => a.dias[0] - z.dias[0] || a.inicio.localeCompare(z.inicio));
+      // aviso se passar de 2 quadras em algum horário
+      const aviso = [];
+      for (const d of dias) {
+        const blocos = fixos.filter((f) => f.dias.includes(d)).map((f) => ({ ini: L.toMin(f.inicio), fim: L.toMin(f.fim), q: f.quadras }));
+        if (L.quadrasLivresNoIntervalo({ ...c, totalQuadras: c.totalQuadras }, blocos.map((x) => ({ ...x })), 0, 24 * 60) < 0 ||
+          blocos.some((x) => blocos.filter((y) => y.ini < x.fim && x.ini < y.fim).reduce((s, y) => s + y.q, 0) > c.totalQuadras)) aviso.push(d);
+      }
+      await salvarCfg({ ...c, fixos });
+      return send(res, 200, { ok: true, fixo, aviso: aviso.length ? 'Atenção: nesse dia os fixos passam de 2 quadras no mesmo horário.' : null });
+    }
+    m = /^\/admin\/api\/fixos\/([\w.-]+)$/.exec(p);
+    if (M === 'DELETE' && m) {
+      await salvarCfg({ ...c, fixos: (c.fixos || []).filter((f) => f.id !== m[1]) });
+      return send(res, 200, { ok: true });
+    }
     if (M === 'GET' && p === '/admin/api/config') return send(res, 200, c);
     if (M === 'PUT' && p === '/admin/api/config') {
       const b = await lerJSON(req);

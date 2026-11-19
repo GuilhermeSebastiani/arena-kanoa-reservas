@@ -22,9 +22,12 @@ const DEFAULTS = {
     '2027-09-07', '2027-10-12', '2027-11-02', '2027-11-15', '2027-11-20', '2027-12-25',
   ],
   fixos: [
-    { id: 'casais', nome: 'Casais', dias: [1, 3], inicio: '17:30', fim: '19:30', quadras: 2 },
-    { id: 'meninas', nome: 'Meninas', dias: [2], inicio: '17:30', fim: '19:30', quadras: 1 },
-    { id: 'meninas2', nome: 'Meninas 2', dias: [4], inicio: '17:30', fim: '19:30', quadras: 1 },
+    { id: 'misto-seg', nome: 'Misto', dias: [1], inicio: '17:30', fim: '19:30', quadras: 2 },
+    { id: 'thaila-ter', nome: 'Thaila', dias: [2], inicio: '17:30', fim: '19:30', quadras: 1 },
+    { id: 'patricia-qua', nome: 'Patrícia Peterlini', dias: [3], inicio: '15:00', fim: '17:00', quadras: 1 },
+    { id: 'thaila-qua', nome: 'Thaila', dias: [3], inicio: '17:00', fim: '19:00', quadras: 1 },
+    { id: 'lidiane-qua', nome: 'Lidiane Pieroni', dias: [3], inicio: '17:30', fim: '19:30', quadras: 1 },
+    { id: 'misto-qui', nome: 'Misto', dias: [4], inicio: '17:30', fim: '19:30', quadras: 2 },
   ],
   fixosCancelados: [],      // "YYYY-MM-DD|idDoFixo"
 };
