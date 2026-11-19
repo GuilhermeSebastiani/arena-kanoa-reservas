@@ -75,6 +75,37 @@ const ativa = (r, agoraISO) =>
   r.status === 'confirmada' || r.status === 'conflito' ||
   (r.status === 'pendente' && r.expira_em && r.expira_em > agoraISO);
 
+const parseQuadras = (v, q, total) => {
+  const arr = String(v || '').split(',').map(Number).filter((n) => n >= 1 && n <= total);
+  return arr.length ? [...new Set(arr)].sort() : null;
+};
+const sobrepoe = (a, b) => a.ini < b.fim && b.ini < a.fim;
+
+// Distribui os blocos nas quadras: quem já tem quadra definida fica nela; o resto vai
+// preferencialmente para a Quadra 1, e só usa a Quadra 2 se a 1 estiver ocupada.
+function alocar(cfg, blocos) {
+  const total = cfg.totalQuadras;
+  const ocup = {};
+  for (let c = 1; c <= total; c++) ocup[c] = [];
+  const fixos = blocos.filter((b) => b.courts);
+  const auto = blocos.filter((b) => !b.courts).sort((x, y) => x.ini - y.ini || y.q - x.q);
+  for (const b of fixos) for (const c of b.courts) ocup[c].push(b);
+  for (const b of auto) {
+    if (b.q >= total) b.courts = Array.from({ length: total }, (_, i) => i + 1);
+    else {
+      const livre = Object.keys(ocup).map(Number).find((c) => !ocup[c].some((o) => sobrepoe(o, b)));
+      b.courts = [livre || 1];
+      if (!livre) b.conflito = true;
+    }
+    for (const c of b.courts) ocup[c].push(b);
+  }
+  return ocup;
+}
+
+function quadrasLivresLista(ocup, ini, fim) {
+  return Object.keys(ocup).map(Number).filter((c) => !ocup[c].some((o) => o.ini < fim && ini < o.fim));
+}
+
 // Tudo o que ocupa o dia: reservas ativas + fixos (que somem se houver evento da arena inteira)
 function ocupacaoDoDia(cfg, data, reservas, agoraISO) {
   const doDia = reservas.filter((r) => r.data === data && ativa(r, agoraISO));
@@ -86,7 +117,8 @@ function ocupacaoDoDia(cfg, data, reservas, agoraISO) {
   const blocos = [];
   for (const r of doDia) {
     if (r.tipo === 'quadra' || (r.tipo === 'bloqueio' && r.espaco !== 'tudo')) {
-      blocos.push({ ini: toMin(r.inicio || cfg.abre), fim: toMin(r.fim || cfg.fecha), q: Number(r.quadras) || cfg.totalQuadras, origem: r.id });
+      const q = Math.min(Number(r.quadras) || cfg.totalQuadras, cfg.totalQuadras);
+      blocos.push({ ini: toMin(r.inicio || cfg.abre), fim: toMin(r.fim || cfg.fecha), q, courts: parseQuadras(r.quadras_num, q, cfg.totalQuadras), origem: r.id, nome: r.resp });
     }
   }
   const fixosDoDia = [];
@@ -95,20 +127,40 @@ function ocupacaoDoDia(cfg, data, reservas, agoraISO) {
     for (const f of cfg.fixos || []) {
       if (!f.dias.includes(w)) continue;
       if ((cfg.fixosCancelados || []).includes(`${data}|${f.id}`)) continue;
-      blocos.push({ ini: toMin(f.inicio), fim: toMin(f.fim), q: f.quadras, origem: `fixo:${f.id}` });
+      const q = Math.min(Number(f.quadras) || 1, cfg.totalQuadras);
+      const courts = q >= cfg.totalQuadras ? null : parseQuadras(f.quadra, q, cfg.totalQuadras);
+      blocos.push({ ini: toMin(f.inicio), fim: toMin(f.fim), q, courts, origem: `fixo:${f.id}`, nome: f.nome });
       fixosDoDia.push(f);
     }
   }
-  return { doDia, eventos, bloqueioTotal, eventoArena, quadrasBloqueadas, blocos, fixosDoDia };
+  const ocup = alocar(cfg, blocos);
+  return { doDia, eventos, bloqueioTotal, eventoArena, quadrasBloqueadas, blocos, fixosDoDia, ocup };
 }
 
+// quantas quadras ficam livres o intervalo inteiro (cada uma tem que estar livre do início ao fim)
 function quadrasLivresNoIntervalo(cfg, blocos, ini, fim) {
-  let livres = cfg.totalQuadras;
-  for (let t = ini; t < fim; t += cfg.passoMin) {
-    const usadas = blocos.filter((b) => b.ini <= t && t < b.fim).reduce((s, b) => s + b.q, 0);
-    livres = Math.min(livres, cfg.totalQuadras - usadas);
+  const ocup = alocar(cfg, blocos.map((b) => ({ ...b, courts: b.courts ? [...b.courts] : null })));
+  return quadrasLivresLista(ocup, ini, fim).length;
+}
+
+// escolhe a(s) quadra(s) para uma reserva nova: Quadra 1 sempre que der
+function escolherQuadras(cfg, oc, ini, fim, q) {
+  const livres = quadrasLivresLista(oc.ocup, ini, fim);
+  if (livres.length < q) return null;
+  return livres.slice(0, q);
+}
+
+// grade do dia (de 30 em 30 min) com o que está ocupado em cada quadra, sem nomes
+function gradeDoDia(cfg, oc) {
+  const out = [];
+  for (let t = toMin(cfg.abre); t < toMin(cfg.fecha); t += cfg.passoMin) {
+    const linha = { hora: toHHMM(t) };
+    for (let c = 1; c <= cfg.totalQuadras; c++) {
+      linha[`q${c}`] = oc.quadrasBloqueadas || oc.ocup[c].some((o) => o.ini <= t && t < o.fim);
+    }
+    out.push(linha);
   }
-  return Math.max(0, livres);
+  return out;
 }
 
 function validaData(cfg, data) {
@@ -128,7 +180,7 @@ function horariosQuadra(cfg, data, durMin, quadras, reservas, agoraISO) {
   const out = [];
   for (let t = abre; t + durMin <= fecha; t += cfg.passoMin) {
     if (data === agora.data && t <= agora.min + 15) continue;
-    if (quadrasLivresNoIntervalo(cfg, oc.blocos, t, t + durMin) >= quadras) out.push(toHHMM(t));
+    if (quadrasLivresLista(oc.ocup, t, t + durMin).length >= quadras) out.push(toHHMM(t));
   }
   return out;
 }
@@ -167,6 +219,6 @@ function resumoMes(cfg, ano, mes, reservas, agoraISO) {
 
 module.exports = {
   DEFAULTS, toMin, toHHMM, round2, agoraLocal, addDias, diaSemana, ehFimDeSemanaOuFeriado,
-  precoEvento, precoQuadra, ativa, ocupacaoDoDia, quadrasLivresNoIntervalo, validaData,
+  precoEvento, precoQuadra, ativa, ocupacaoDoDia, quadrasLivresNoIntervalo, quadrasLivresLista, escolherQuadras, gradeDoDia, alocar, validaData,
   horariosQuadra, eventoDisponivel, resumoMes,
 };

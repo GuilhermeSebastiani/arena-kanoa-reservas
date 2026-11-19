@@ -107,7 +107,7 @@ textarea{min-height:120px;font:13px ui-monospace,Menlo,monospace}
           <div><label>Fim</label><input type="time" id="n-fim" step="1800"></div>
         </div>
         <div class="grid2">
-          <div id="n-q-box"><label>Quadras</label><select id="n-q"><option>1</option><option>2</option></select></div>
+          <div id="n-q-box"><label>Quadra</label><select id="n-q"><option value="auto">1 quadra · automática (Quadra 1 se livre)</option><option value="1">Quadra 1</option><option value="2">Quadra 2</option><option value="1,2">As duas quadras</option></select></div>
           <div id="n-esp-box" hidden><label>Espaço</label><select id="n-esp"><option value="arena">Arena toda</option><option value="quiosque">Quiosque</option><option value="tudo">Tudo (bloqueia o dia)</option></select></div>
           <div><label>Valor (R$) <small class="vazio">vazio = tabela</small></label><input type="number" step="0.01" id="n-valor"></div>
         </div>
@@ -136,7 +136,7 @@ textarea{min-height:120px;font:13px ui-monospace,Menlo,monospace}
         <input type="hidden" id="fx-id">
         <div class="grid2">
           <div><label>Nome / grupo</label><input id="fx-nome" placeholder="Ex.: Thaila"></div>
-          <div><label>Quadras</label><select id="fx-q"><option value="1">1 quadra</option><option value="2">2 quadras</option></select></div>
+          <div><label>Quadra</label><select id="fx-q"><option value="auto">1 quadra · automática (Quadra 1 se livre)</option><option value="1">Quadra 1</option><option value="2">Quadra 2</option><option value="1,2">As duas quadras</option></select></div>
         </div>
         <label>Dia(s) da semana</label>
         <div id="fx-dias" style="display:flex;gap:6px;flex-wrap:wrap"></div>
@@ -215,6 +215,8 @@ const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','ag
 const hojeStr = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 const addDias = (s, n) => { const d = new Date(`${s}T12:00:00`); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 const fmtDia = (s) => new Date(`${s}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' });
+const nomeQ = (s) => { const q = String(s).split(','); return q.length > 1 ? `Quadras ${q.join(' e ')}` : `Quadra ${q[0]}`; };
+const curtoQ = (s) => s ? String(s).split(',').map((x) => `Q${x}`).join('+') : '';
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
 
 async function api(url, opts = {}) {
@@ -274,7 +276,7 @@ async function carregarAgenda() {
   bindAcoes();
 }
 function itemReserva(r) {
-  const tipo = r.tipo === 'evento' ? `Evento · ${r.espaco === 'arena' ? 'arena toda' : 'quiosque'}` : r.tipo === 'bloqueio' ? `Bloqueio${r.espaco==='tudo'?' · dia todo':''}` : `${r.quadras} quadra${r.quadras>1?'s':''}`;
+  const tipo = r.tipo === 'evento' ? `Evento · ${r.espaco === 'arena' ? 'arena toda' : 'quiosque'}` : r.tipo === 'bloqueio' ? `Bloqueio${r.espaco==='tudo'?' · dia todo':r.quadras_num ? ' · ' + nomeQ(r.quadras_num) : ''}` : (r.quadras_num ? nomeQ(r.quadras_num) : `${r.quadras} quadra${r.quadras>1?'s':''}`);
   const hora = r.inicio ? `${r.inicio}–${r.fim}` : 'dia todo';
   const inativo = ['cancelada','expirada'].includes(r.status);
   const pago = r.valor_pix && r.valor_pix < r.valor ? ` · sinal ${brl(r.valor_pix)}` : '';
@@ -293,7 +295,7 @@ function itemFixo(f) {
   const off = f.cancelado || f.cedeAoEvento;
   return `<div class="item ${off ? 'riscado' : ''}">
     <div class="hora">${f.inicio}–${f.fim}</div>
-    <div class="info"><span class="tag t-fixo">Fixo</span><b>${esc(f.nome)}</b> · ${f.quadras} quadra${f.quadras>1?'s':''}${f.cedeAoEvento ? '<small>Não acontece: evento da arena neste dia</small>' : ''}${f.cancelado ? '<small>Cancelado neste dia</small>' : ''}</div>
+    <div class="info"><span class="tag t-fixo">Fixo</span><b>${esc(f.nome)}</b> · ${f.quadrasNum ? nomeQ(f.quadrasNum) : `${f.quadras} quadra${f.quadras>1?'s':''}`}${f.cedeAoEvento ? '<small>Não acontece: evento da arena neste dia</small>' : ''}${f.cancelado ? '<small>Cancelado neste dia</small>' : ''}</div>
     <div class="acoes">${f.cedeAoEvento ? '' : `<button class="b" data-fixo="${f.fixoId}" data-data="${f.data}" data-cancelar="${!f.cancelado}">${f.cancelado ? 'Reativar' : 'Cancelar neste dia'}</button>`}</div></div>`;
 }
 function bindAcoes() {
@@ -325,7 +327,7 @@ async function carregarCal() {
     const ds = `${cAno}-${String(cMes).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const rs = j.reservas.filter((r) => r.data === ds && ['confirmada','pendente','conflito'].includes(r.status));
     const fx = j.fixos.filter((f) => f.data === ds && !f.cancelado && !f.cedeAoEvento);
-    h += `<div class="d"><b>${d}</b>${rs.filter((r)=>r.tipo!=='quadra').map((r) => `<div class="ev">${esc(r.resp || (r.tipo==='bloqueio'?'Bloqueio':'Evento'))}</div>`).join('')}${rs.filter((r)=>r.tipo==='quadra').map((r) => `<div class="qd">${r.inicio} ${esc((r.resp||'').split(' ')[0])}</div>`).join('')}${fx.map((f) => `<div class="fx">${f.inicio} ${esc(f.nome)}</div>`).join('')}</div>`;
+    h += `<div class="d"><b>${d}</b>${rs.filter((r)=>r.tipo!=='quadra').map((r) => `<div class="ev">${esc(r.resp || (r.tipo==='bloqueio'?'Bloqueio':'Evento'))}</div>`).join('')}${rs.filter((r)=>r.tipo==='quadra').map((r) => `<div class="qd">${curtoQ(r.quadras_num)} ${r.inicio} ${esc((r.resp||'').split(' ')[0])}</div>`).join('')}${fx.map((f) => `<div class="fx">${curtoQ(f.quadrasNum)} ${f.inicio} ${esc(f.nome)}</div>`).join('')}</div>`;
   }
   $('#cal').innerHTML = h;
 }
@@ -346,13 +348,13 @@ $('#f-nova').onsubmit = async (e) => {
   e.preventDefault();
   const t = $('#n-tipo').value;
   const body = { tipo: t, data: $('#n-data').value, inicio: $('#n-ini').value || null, fim: $('#n-fim').value || null,
-    quadras: t === 'evento' ? 0 : Number($('#n-q').value), espaco: t === 'quadra' ? null : $('#n-esp').value,
+    quadras: t === 'evento' ? 0 : ($('#n-q').value === '1,2' ? 2 : 1), quadras_num: t === 'evento' ? null : $('#n-q').value, espaco: t === 'quadra' ? null : $('#n-esp').value,
     valor: $('#n-valor').value !== '' ? Number($('#n-valor').value) : null, resp: $('#n-resp').value, telefone: $('#n-tel').value,
     status: $('#n-status').value, obs: $('#n-obs').value };
   if (t === 'bloqueio' && body.espaco === 'tudo') { body.inicio = null; body.fim = null; }
   if (t === 'quadra' && $('#n-fixo').checked) {
     try {
-      await salvarFixo({ nome: body.resp, quadras: body.quadras, inicio: body.inicio, fim: body.fim, dias: [new Date(`${body.data}T12:00:00`).getDay()] }, $('#n-msg'));
+      await salvarFixo({ nome: body.resp, quadras: body.quadras, quadra: ['1','2'].includes(body.quadras_num) ? Number(body.quadras_num) : null, inicio: body.inicio, fim: body.fim, dias: [new Date(`${body.data}T12:00:00`).getDay()] }, $('#n-msg'));
       if ($('#n-msg').className === 'msg ok') $('#n-msg').textContent = 'Fixo criado: aparece toda semana na Agenda (aba Fixos para mudar).';
       $('#f-nova').reset(); $('#n-data').value = body.data; ajustaForm();
     } catch (er) { $('#n-msg').className = 'msg err'; $('#n-msg').textContent = er.message; }
@@ -397,7 +399,7 @@ async function carregarFixos() {
   const c = await api('/admin/api/config');
   fixosAtuais = c.fixos || [];
   $('#fx-lista').innerHTML = fixosAtuais.length ? fixosAtuais.map((f) => `<div class="item"><div class="hora">${f.inicio}–${f.fim}</div>
-    <div class="info"><b>${esc(f.nome)}</b> · ${f.quadras} quadra${f.quadras>1?'s':''}<small>${f.dias.map((d) => DIAS[d]).join(', ')}</small></div>
+    <div class="info"><b>${esc(f.nome)}</b> · ${f.quadras >= 2 ? 'as duas quadras' : f.quadra ? `Quadra ${f.quadra}` : '1 quadra (automática)'}<small>${f.dias.map((d) => DIAS[d]).join(', ')}</small></div>
     <div class="acoes"><button class="b" data-fx-ed="${f.id}">Editar</button><button class="b dan" data-fx-rm="${f.id}">Remover</button></div></div>`).join('') : '<p class="vazio">Nenhum fixo.</p>';
   document.querySelectorAll('[data-fx-rm]').forEach((b) => b.onclick = async () => {
     if (!confirm('Remover este fixo de todas as semanas?')) return;
@@ -405,7 +407,7 @@ async function carregarFixos() {
   });
   document.querySelectorAll('[data-fx-ed]').forEach((b) => b.onclick = () => {
     const f = fixosAtuais.find((x) => x.id === b.dataset.fxEd);
-    $('#fx-id').value = f.id; $('#fx-nome').value = f.nome; $('#fx-q').value = String(f.quadras); $('#fx-ini').value = f.inicio; $('#fx-fim').value = f.fim;
+    $('#fx-id').value = f.id; $('#fx-nome').value = f.nome; $('#fx-q').value = f.quadras >= 2 ? '1,2' : (f.quadra ? String(f.quadra) : 'auto'); $('#fx-ini').value = f.inicio; $('#fx-fim').value = f.fim;
     document.querySelectorAll('#fx-dias input').forEach((i) => i.checked = f.dias.includes(Number(i.value)));
     $('#fx-titulo').textContent = `Editar fixo: ${f.nome}`; $('#fx-cancelar').hidden = false;
     $('#f-fixo').scrollIntoView({ behavior: 'smooth' });
@@ -420,7 +422,7 @@ async function salvarFixo(body, msgEl) {
 $('#f-fixo').onsubmit = async (e) => {
   e.preventDefault();
   try {
-    await salvarFixo({ id: $('#fx-id').value || undefined, nome: $('#fx-nome').value, quadras: Number($('#fx-q').value), inicio: $('#fx-ini').value, fim: $('#fx-fim').value,
+    await salvarFixo({ id: $('#fx-id').value || undefined, nome: $('#fx-nome').value, quadras: $('#fx-q').value === '1,2' ? 2 : 1, quadra: ['1','2'].includes($('#fx-q').value) ? Number($('#fx-q').value) : null, inicio: $('#fx-ini').value, fim: $('#fx-fim').value,
       dias: [...document.querySelectorAll('#fx-dias input:checked')].map((i) => Number(i.value)) }, $('#fx-msg'));
     limparFixo(); carregarFixos();
   } catch (er) { $('#fx-msg').className = 'msg err'; $('#fx-msg').textContent = er.message; }

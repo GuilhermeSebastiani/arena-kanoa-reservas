@@ -78,7 +78,7 @@ async function reservasEntre(de, ate) {
 }
 
 const publica = (r) => ({
-  id: r.id, tipo: r.tipo, data: r.data, inicio: r.inicio, fim: r.fim, quadras: r.quadras, espaco: r.espaco,
+  id: r.id, tipo: r.tipo, data: r.data, inicio: r.inicio, fim: r.fim, quadras: r.quadras, quadrasNum: r.quadras_num, espaco: r.espaco,
   resp: r.resp, valor: r.valor, valorPix: r.valor_pix, status: r.status, expiraEm: r.expira_em, pagoEm: r.pago_em,
   copia: r.status === 'pendente' ? r.pix_copia : undefined,
   qr: r.status === 'pendente' ? r.pix_qr : undefined,
@@ -94,18 +94,21 @@ async function aplicarPagamento(r, pg) {
     if (atual.status === 'confirmada' || atual.status === 'conflito') return atual;
     const agora = agoraISO();
     let livre = true;
+    let quadrasNum = atual.quadras_num;
     if (!L.ativa(atual, agora)) {
       // o prazo venceu antes do PIX: só confirma se o horário continua livre
       const outras = (await reservasEntre(atual.data, atual.data)).filter((x) => x.id !== atual.id);
       if (atual.tipo === 'evento') livre = L.eventoDisponivel(c, atual.data, atual.espaco, outras, agora);
       else {
         const oc = L.ocupacaoDoDia(c, atual.data, outras, agora);
-        livre = !oc.quadrasBloqueadas && L.quadrasLivresNoIntervalo(c, oc.blocos, L.toMin(atual.inicio), L.toMin(atual.fim)) >= atual.quadras;
+        const qs = oc.quadrasBloqueadas ? null : L.escolherQuadras(c, oc, L.toMin(atual.inicio), L.toMin(atual.fim), atual.quadras);
+        livre = !!qs;
+        if (qs) quadrasNum = qs.join(',');
       }
     }
     const status = livre ? 'confirmada' : 'conflito';
     const obs = livre ? atual.obs : `${atual.obs ? atual.obs + ' | ' : ''}PIX pago depois do prazo e o horário já tinha sido ocupado: devolver ou remarcar.`;
-    await db.run('UPDATE reservas SET status = $1, pago_em = $2, obs = $3 WHERE id = $4', [status, pg.pagoEm || agora, obs, atual.id]);
+    await db.run('UPDATE reservas SET status = $1, pago_em = $2, obs = $3, quadras_num = $4 WHERE id = $5', [status, pg.pagoEm || agora, obs, quadrasNum || null, atual.id]);
     console.log(`[pagamento] reserva ${atual.id} -> ${status}`);
     return db.get('SELECT * FROM reservas WHERE id = $1', [atual.id]);
   });
@@ -152,6 +155,9 @@ async function criarReservaSite(body, ip) {
       const livres = L.horariosQuadra(c, data, dur, quadras, doDia, agora);
       if (!livres.includes(body.inicio)) throw Object.assign(new Error('Esse horário acabou de ser ocupado. Escolha outro.'), { status: 409 });
       r = { ...r, inicio: body.inicio, fim: L.toHHMM(L.toMin(body.inicio) + dur), quadras, valor: L.precoQuadra(c, quadras, dur) };
+      const qs = L.escolherQuadras(c, L.ocupacaoDoDia(c, data, doDia, agora), L.toMin(r.inicio), L.toMin(r.fim), quadras);
+      if (!qs) throw Object.assign(new Error('Esse horário acabou de ser ocupado. Escolha outro.'), { status: 409 });
+      r.quadras_num = qs.join(',');
       r.valor_pix = r.valor;
     } else {
       const espaco = body.espaco === 'quiosque' ? 'quiosque' : 'arena';
@@ -180,10 +186,10 @@ async function criarReservaSite(body, ip) {
 
     await db.run(
       `INSERT INTO reservas (id, tipo, data, inicio, fim, quadras, espaco, resp, telefone, email, valor, valor_pix, status, origem,
-        mp_payment_id, pix_copia, pix_qr, expira_em, obs, criado)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
+        mp_payment_id, pix_copia, pix_qr, expira_em, obs, criado, quadras_num)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
       [r.id, r.tipo, r.data, r.inicio || null, r.fim || null, r.quadras || 0, r.espaco || null, r.resp, r.telefone, r.email || null,
-        r.valor, r.valor_pix, r.status, r.origem, r.mp_payment_id, r.pix_copia || null, r.pix_qr || null, r.expira_em, r.obs || null, r.criado],
+        r.valor, r.valor_pix, r.status, r.origem, r.mp_payment_id, r.pix_copia || null, r.pix_qr || null, r.expira_em, r.obs || null, r.criado, r.quadras_num || null],
     );
     return { ...publica(r), teste: pix.teste };
   });
@@ -242,10 +248,23 @@ async function criarReservaAdmin(b) {
   if (tipo === 'evento' && r.semValor) r.valor = L.precoEvento(c, r.data, r.espaco || 'arena') || 0;
   if (tipo === 'quadra' && r.semValor) r.valor = L.precoQuadra(c, r.quadras, L.toMin(r.fim) - L.toMin(r.inicio));
   const expira = r.status === 'pendente' ? '9999-12-31T00:00:00.000Z' : null; // pendente do painel = "a receber", segura a data
+  // quadra: escolhida no painel (1, 2 ou 1,2) ou automática (Quadra 1 sempre que der)
+  r.quadras_num = null;
+  if (tipo !== 'evento' && r.inicio && r.fim && r.quadras) {
+    const escolhida = String(b.quadras_num || 'auto');
+    if (escolhida !== 'auto') r.quadras_num = escolhida;
+    else {
+      const oc = L.ocupacaoDoDia(c, r.data, await reservasEntre(r.data, r.data), agoraISO());
+      const qs = L.escolherQuadras(c, oc, L.toMin(r.inicio), L.toMin(r.fim), r.quadras);
+      r.quadras_num = qs ? qs.join(',') : null;
+      if (!qs) r.obs = `${r.obs ? r.obs + ' | ' : ''}Sem quadra livre no horário: confira`;
+    }
+    if (r.quadras_num && r.quadras_num.split(',').length !== r.quadras) r.quadras = r.quadras_num.split(',').length;
+  }
   await db.run(
-    `INSERT INTO reservas (id, tipo, data, inicio, fim, quadras, espaco, resp, telefone, valor, valor_pix, status, origem, expira_em, obs, criado)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'admin',$13,$14,$15)`,
-    [r.id, r.tipo, r.data, r.inicio, r.fim, r.quadras, r.espaco, r.resp, r.telefone, r.valor, 0, r.status, expira, r.obs, agoraISO()],
+    `INSERT INTO reservas (id, tipo, data, inicio, fim, quadras, espaco, resp, telefone, valor, valor_pix, status, origem, expira_em, obs, criado, quadras_num)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'admin',$13,$14,$15,$16)`,
+    [r.id, r.tipo, r.data, r.inicio, r.fim, r.quadras, r.espaco, r.resp, r.telefone, r.valor, 0, r.status, expira, r.obs, agoraISO(), r.quadras_num],
   );
   return r;
 }
@@ -259,7 +278,8 @@ async function fixosNoPeriodo(c, de, ate, reservas) {
     for (const f of c.fixos || []) {
       if (!f.dias.includes(w)) continue;
       const cancelado = (c.fixosCancelados || []).includes(`${d}|${f.id}`);
-      out.push({ data: d, fixoId: f.id, nome: f.nome, inicio: f.inicio, fim: f.fim, quadras: f.quadras, cancelado, cedeAoEvento: oc.quadrasBloqueadas && !cancelado });
+      const bl = oc.blocos.find((x) => x.origem === `fixo:${f.id}`);
+      out.push({ data: d, fixoId: f.id, nome: f.nome, inicio: f.inicio, fim: f.fim, quadras: f.quadras, quadrasNum: bl ? bl.courts.join(',') : (f.quadra ? String(f.quadra) : null), cancelado, cedeAoEvento: oc.quadrasBloqueadas && !cancelado });
     }
   }
   return out;
@@ -308,6 +328,8 @@ async function rotear(req, res) {
       data: q.data,
       fimDeSemana: L.ehFimDeSemanaOuFeriado(c, q.data),
       quadra: { dur, quadras, valor: L.precoQuadra(c, quadras, dur), horarios: L.horariosQuadra(c, q.data, dur, quadras, rs, agora) },
+      grade: L.gradeDoDia(c, L.ocupacaoDoDia(c, q.data, rs, agora)),
+      totalQuadras: c.totalQuadras,
       eventos: ['arena', 'quiosque'].map((esp) => {
         const valor = L.precoEvento(c, q.data, esp);
         return { espaco: esp, livre: L.eventoDisponivel(c, q.data, esp, rs, agora), valor, sinal: L.round2(valor * (Number(c.sinalEventoPct) || 100) / 100) };
@@ -407,7 +429,10 @@ async function rotear(req, res) {
       const ate = q.ate || L.addDias(de, 60);
       const rs = await reservasEntre(de, ate);
       const agora = agoraISO();
-      const lista = rs.map((r) => ({ ...r, pix_qr: undefined, status: r.status === 'pendente' && !L.ativa(r, agora) ? 'expirada' : r.status }));
+      // quadra efetiva de cada reserva (as antigas sem quadra definida são distribuídas como no site)
+      const efetiva = {};
+      for (const d of [...new Set(rs.map((r) => r.data))]) for (const bl of L.ocupacaoDoDia(c, d, rs, agora).blocos) efetiva[bl.origem] = bl.courts.join(',');
+      const lista = rs.map((r) => ({ ...r, pix_qr: undefined, quadras_num: r.quadras_num || efetiva[r.id] || null, status: r.status === 'pendente' && !L.ativa(r, agora) ? 'expirada' : r.status }));
       return send(res, 200, { reservas: lista, fixos: await fixosNoPeriodo(c, de, ate, rs), modoTeste: mp.modoTeste() });
     }
     if (M === 'POST' && p === '/admin/api/reservas') return send(res, 201, await criarReservaAdmin(await lerJSON(req)));
@@ -441,6 +466,7 @@ async function rotear(req, res) {
       if (!hh.test(b.inicio || '') || !hh.test(b.fim || '') || b.fim <= b.inicio) return erro(res, 400, 'Confira início e fim.');
       const quadras = Number(b.quadras) === 2 ? 2 : 1;
       const fixo = { id: b.id || `${L.toMin(b.inicio)}-${Date.now().toString(36)}`, nome: String(b.nome).trim().slice(0, 60), dias, inicio: b.inicio, fim: b.fim, quadras };
+      if (quadras === 1 && [1, 2].includes(Number(b.quadra))) fixo.quadra = Number(b.quadra);
       if (b.valorHora !== undefined && b.valorHora !== '' && b.valorHora !== null) fixo.valorHora = Number(b.valorHora);
       const fixos = (c.fixos || []).filter((f) => f.id !== fixo.id);
       fixos.push(fixo);

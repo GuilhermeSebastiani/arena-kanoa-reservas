@@ -88,6 +88,15 @@ textarea{min-height:80px;resize:vertical}
 .teste{background:#FFF4D6;border:1px solid #F0D58A;color:#6B4E00;border-radius:12px;padding:10px 14px;font-size:14px;margin-bottom:14px}
 footer{text-align:center;color:var(--muted);font-size:13px;padding:30px 16px}
 [hidden]{display:none!important}
+.grade{display:grid;grid-template-columns:52px 1fr 1fr;gap:3px 6px;font-size:13px}
+.grade .th{font:800 13px var(--display);text-transform:uppercase;text-align:center;color:var(--ink);padding-bottom:4px}
+.grade .h{color:var(--muted);font-weight:600;text-align:right;padding-right:2px;line-height:22px}
+.grade .c{display:grid;grid-template-columns:1fr 1fr;gap:2px}
+.grade .c span{height:22px;border-radius:5px;background:#EAF3EC;border:1px solid #CFE5D5}
+.grade .c span.x{background:#E9DCC6;border-color:#E9DCC6}
+.grade .c span.sel{background:var(--sun);border-color:var(--sun)}
+.grade-leg{display:flex;gap:14px;font-size:13px;color:var(--muted);margin-top:8px}
+.grade-leg i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px}
 </style>
 </head>
 <body>
@@ -122,6 +131,9 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:30px 16px}
     </div>
 
     <div id="bloco-quadra" hidden>
+      <h2>Horários do dia</h2>
+      <div class="card"><div class="grade" id="grade"></div>
+        <div class="grade-leg"><span><i style="background:#EAF3EC;border:1px solid #CFE5D5"></i>Livre</span><span><i style="background:#E9DCC6"></i>Ocupado</span><span><i style="background:var(--sun)"></i>Sua reserva</span></div></div>
       <h2>2. Quanto tempo e quantas quadras</h2>
       <div class="chips" id="duracoes"></div>
       <div class="chips" id="nquadras" style="margin-top:10px"></div>
@@ -282,6 +294,7 @@ function renderDia() {
     $('#nquadras').innerHTML = [1, 2].slice(0, st.cfg.totalQuadras).map((q) => `<button type="button" class="chip" data-q="${q}" aria-pressed="${q===st.quadras}">${q} quadra${q>1?'s':''}</button>`).join('');
     document.querySelectorAll('#duracoes .chip').forEach((b) => b.onclick = () => { st.dur = Number(b.dataset.dur); st.inicio = null; carregarDia(); });
     document.querySelectorAll('#nquadras .chip').forEach((b) => b.onclick = () => { st.quadras = Number(b.dataset.q); st.inicio = null; carregarDia(); });
+    renderGrade();
     const hs = st.dia.quadra.horarios;
     $('#horarios').innerHTML = hs.length
       ? hs.map((h) => `<button type="button" class="chip hora" data-h="${h}" aria-pressed="${h===st.inicio}">${h}</button>`).join('')
@@ -303,10 +316,36 @@ function renderDia() {
   if (pronto) renderResumo();
 }
 
+// qual quadra a reserva vai pegar: Quadra 1 sempre que estiver livre no horário todo
+function quadrasPrevistas() {
+  if (!st.inicio || !st.dia) return [];
+  if (st.quadras >= st.dia.totalQuadras) return Array.from({ length: st.dia.totalQuadras }, (_, k) => k + 1);
+  const ini = st.inicio, fim = somaMin(st.inicio, st.dur);
+  const linhas = st.dia.grade.filter((g) => g.hora >= ini && g.hora < fim);
+  for (let c = 1; c <= st.dia.totalQuadras; c++) if (linhas.every((g) => !g[`q${c}`])) return [c];
+  return [];
+}
+const nomeQuadras = (arr) => arr.length > 1 ? `Quadras ${arr.join(' e ')}` : `Quadra ${arr[0]}`;
+function renderGrade() {
+  const g = st.dia.grade; const sel = quadrasPrevistas();
+  const fim = st.inicio ? somaMin(st.inicio, st.dur) : null;
+  let h = `<div></div>${Array.from({ length: st.dia.totalQuadras }, (_, k) => `<div class="th">Quadra ${k + 1}</div>`).join('')}`;
+  for (let k = 0; k < g.length; k += 2) {
+    const a = g[k], b = g[k + 1] || null;
+    h += `<div class="h">${a.hora.slice(0, 2)}h</div>`;
+    for (let c = 1; c <= st.dia.totalQuadras; c++) {
+      const cel = (x) => { if (!x) return '<span style="visibility:hidden"></span>'; const meu = st.inicio && sel.includes(c) && x.hora >= st.inicio && x.hora < fim; return `<span class="${meu ? 'sel' : x[`q${c}`] ? 'x' : ''}" title="${x.hora}"></span>`; };
+      h += `<div class="c">${cel(a)}${cel(b)}</div>`;
+    }
+  }
+  $('#grade').innerHTML = h;
+}
+
 function linhasResumo() {
   if (st.tipo === 'quadra') {
     const v = st.dia.quadra.valor;
-    return { html: `<div><b>${fmtData(st.data)}</b></div><div>${st.quadras} quadra${st.quadras>1?'s':''} · ${st.inicio} às ${somaMin(st.inicio, st.dur)} (${fmtDur(st.dur)})</div><div class="total">${brl(v)}</div>`, pix: v };
+    const qs = quadrasPrevistas();
+    return { html: `<div><b>${fmtData(st.data)}</b></div><div>${qs.length ? nomeQuadras(qs) : `${st.quadras} quadra${st.quadras>1?'s':''}`} · ${st.inicio} às ${somaMin(st.inicio, st.dur)} (${fmtDur(st.dur)})</div><div class="total">${brl(v)}</div>`, pix: v };
   }
   const e = st.dia.eventos.find((x) => x.espaco === st.espaco);
   const nome = st.espaco === 'arena' ? 'Arena toda' : 'Quiosque';
@@ -341,7 +380,7 @@ $('#btn-pix').onclick = async () => {
 
 function resumoReserva(r) {
   const quando = `<div><b>${fmtData(r.data)}</b></div>`;
-  const oque = r.tipo === 'quadra' ? `<div>${r.quadras} quadra${r.quadras>1?'s':''} · ${r.inicio} às ${r.fim}</div>` : `<div>Evento · ${r.espaco === 'arena' ? 'Arena toda' : 'Quiosque'}</div>`;
+  const oque = r.tipo === 'quadra' ? `<div>${r.quadrasNum ? nomeQuadras(r.quadrasNum.split(',')) : `${r.quadras} quadra${r.quadras>1?'s':''}`} · ${r.inicio} às ${r.fim}</div>` : `<div>Evento · ${r.espaco === 'arena' ? 'Arena toda' : 'Quiosque'}</div>`;
   const val = r.valorPix < r.valor ? `<div>Sinal: <b>${brl(r.valorPix)}</b> · restante ${brl(r.valor - r.valorPix)} no dia</div>` : `<div>Valor: <b>${brl(r.valor)}</b></div>`;
   return quando + oque + val;
 }

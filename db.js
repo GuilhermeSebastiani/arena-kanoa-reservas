@@ -52,6 +52,7 @@ async function open() {
       async run(sql, params = []) { const r = await pool.query(sql, params); return { changes: r.rowCount }; },
     };
     for (const s of SCHEMA) await db.run(s);
+    await db.run('ALTER TABLE reservas ADD COLUMN IF NOT EXISTS quadras_num TEXT');
     return db;
   }
   const { DatabaseSync } = require('node:sqlite');
@@ -65,6 +66,7 @@ async function open() {
     async run(sql, params = []) { const r = s.prepare(conv(sql)).run(...params); return { changes: r.changes }; },
   };
   for (const q of SCHEMA) s.exec(q);
+  try { s.exec('ALTER TABLE reservas ADD COLUMN quadras_num TEXT'); } catch {}
   return db;
 }
 
