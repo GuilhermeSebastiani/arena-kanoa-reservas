@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reservas · Arena Kanoa</title>
+<meta name="description" content="Reserve quadra de areia ou a Arena Kanoa para seu evento. Pagamento por PIX.">
+<link rel="icon" href="/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sand:#F4E4C8;--paper:#FBF6EC;--ink:#2B2116;--muted:#6E5E4C;--line:#E2D2B4;
+  --sea:#1E5BB8;--sun:#FF6A13;--white:#FFFFFF;--ok:#1F8A4C;--bad:#B3261E;
+  --display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --r:18px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font:16px/1.5 var(--body);-webkit-font-smoothing:antialiased}
+a{color:var(--sea)}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px}
+header{background:var(--sand);border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;gap:14px;padding-top:14px;padding-bottom:14px}
+header img{width:56px;height:56px;object-fit:contain}
+header h1{font:900 22px/1.05 var(--display);margin:0;letter-spacing:-.01em;text-transform:uppercase}
+header p{margin:2px 0 0;color:var(--muted);font-size:14px}
+header .site{margin-left:auto;font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap}
+main{padding:22px 0 60px}
+h2{font:800 15px/1.2 var(--display);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:26px 0 10px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--sand);padding:6px;border-radius:999px}
+.tabs button{border:0;background:transparent;font:800 16px var(--display);text-transform:uppercase;padding:12px;border-radius:999px;color:var(--muted);cursor:pointer}
+.tabs button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.card{background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-head b{font:800 18px var(--display);text-transform:capitalize}
+.icon-btn{border:1px solid var(--line);background:var(--paper);width:40px;height:40px;border-radius:50%;font-size:18px;cursor:pointer;color:var(--ink)}
+.icon-btn:disabled{opacity:.35;cursor:default}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal .dw{font-size:12px;font-weight:700;color:var(--muted);text-align:center;padding:4px 0}
+.cal button{aspect-ratio:1;border:1px solid transparent;border-radius:12px;background:var(--paper);font:600 15px var(--body);color:var(--ink);cursor:pointer;position:relative}
+.cal button.livre{background:#EAF3EC;border-color:#CFE5D5}
+.cal button.ocup{background:transparent;color:#B9AD99;text-decoration:line-through;cursor:not-allowed}
+.cal button.fora{background:transparent;color:#CFC4B1;cursor:default}
+.cal button.sel{background:var(--sun);color:var(--white);border-color:var(--sun)}
+.cal button .fds{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--sea)}
+.cal button.sel .fds{background:var(--white)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;margin-right:5px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--white);padding:9px 14px;border-radius:999px;font:600 15px var(--body);color:var(--ink);cursor:pointer;min-width:64px}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.chip.hora[aria-pressed=true]{background:var(--sun);border-color:var(--sun);color:var(--white)}
+.vazio{color:var(--muted);font-size:15px}
+.espacos{display:grid;gap:10px}
+.esp{display:flex;gap:14px;align-items:center;text-align:left;border:2px solid var(--line);background:var(--white);border-radius:var(--r);padding:14px;cursor:pointer;font:inherit;color:inherit;width:100%}
+.esp[aria-pressed=true]{border-color:var(--sun);box-shadow:0 0 0 3px #FF6A1322}
+.esp:disabled{opacity:.5;cursor:not-allowed}
+.esp b{font:800 18px var(--display);text-transform:uppercase;display:block}
+.esp small{color:var(--muted)}
+.esp .preco{margin-left:auto;text-align:right;font:800 20px var(--display);white-space:nowrap}
+.esp .preco small{display:block;font:500 12px var(--body)}
+label{display:block;font-weight:600;font-size:14px;margin:12px 0 5px}
+label span{font-weight:400;color:var(--muted)}
+input,textarea{width:100%;font:16px var(--body);padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--white);color:var(--ink)}
+input:focus,textarea:focus{outline:2px solid var(--sea);outline-offset:1px}
+textarea{min-height:80px;resize:vertical}
+.resumo{background:var(--sand);border-radius:var(--r);padding:16px;margin-top:18px;display:grid;gap:4px}
+.resumo .total{font:900 28px var(--display);margin-top:4px}
+.resumo .nota{font-size:13px;color:var(--muted)}
+.btn{display:block;width:100%;border:0;background:var(--sun);color:var(--white);font:900 18px var(--display);text-transform:uppercase;letter-spacing:.02em;padding:16px;border-radius:999px;margin-top:16px;cursor:pointer}
+.btn:disabled{background:#D9C9AE;cursor:not-allowed}
+.btn.sec{background:var(--white);color:var(--ink);border:1px solid var(--line)}
+.erro{background:#FDECEA;color:var(--bad);border-radius:12px;padding:10px 14px;margin-top:12px;font-weight:600}
+.pix{text-align:center}
+.pix img{width:min(260px,100%);image-rendering:pixelated;border:8px solid var(--white);border-radius:12px;background:var(--white)}
+.pix .codigo{word-break:break-all;font:13px/1.4 ui-monospace,Menlo,monospace;background:var(--paper);border:1px dashed var(--line);border-radius:12px;padding:10px;margin:12px 0 0;text-align:left;max-height:110px;overflow:auto}
+.timer{font:800 22px var(--display);color:var(--sun)}
+.status{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:14px;color:var(--muted);font-weight:600}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--sun);animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.25}}
+.okbox{text-align:center}
+.okbox .big{font-size:56px;line-height:1}
+.okbox h3{font:900 26px var(--display);text-transform:uppercase;margin:8px 0}
+.teste{background:#FFF4D6;border:1px solid #F0D58A;color:#6B4E00;border-radius:12px;padding:10px 14px;font-size:14px;margin-bottom:14px}
+footer{text-align:center;color:var(--muted);font-size:13px;padding:30px 16px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <img src="/logo.png" alt="Arena Kanoa">
+  <div><h1>Reservas</h1><p>Esportes e Eventos · Sete Quedas-MS</p></div>
+  <a class="site" href="https://arenakanoa.com.br">← Site</a>
+</div></header>
+
+<main class="wrap">
+  <div id="aviso-teste" class="teste" hidden>Modo de teste: os PIX gerados aqui não são cobrados.</div>
+
+  <section id="passo-escolha">
+    <div class="tabs" role="group" aria-label="Tipo de reserva">
+      <button type="button" data-tipo="quadra" aria-pressed="true">Quadra</button>
+      <button type="button" data-tipo="evento" aria-pressed="false">Evento</button>
+    </div>
+
+    <h2>1. Escolha o dia</h2>
+    <div class="card">
+      <div class="cal-head">
+        <button class="icon-btn" id="mes-ant" aria-label="Mês anterior">‹</button>
+        <b id="mes-nome"></b>
+        <button class="icon-btn" id="mes-prox" aria-label="Próximo mês">›</button>
+      </div>
+      <div class="cal" id="cal"></div>
+      <div class="legend">
+        <span><i style="background:#EAF3EC;border:1px solid #CFE5D5"></i>Disponível</span>
+        <span><i style="background:transparent;border:1px solid var(--line)"></i>Indisponível</span>
+        <span><i style="background:var(--sea);width:6px;height:6px;border-radius:50%"></i>Fim de semana/feriado</span>
+      </div>
+    </div>
+
+    <div id="bloco-quadra" hidden>
+      <h2>2. Quanto tempo e quantas quadras</h2>
+      <div class="chips" id="duracoes"></div>
+      <div class="chips" id="nquadras" style="margin-top:10px"></div>
+      <h2>3. Horário de início</h2>
+      <div class="chips" id="horarios"></div>
+    </div>
+
+    <div id="bloco-evento" hidden>
+      <h2>2. Espaço</h2>
+      <div class="espacos" id="espacos"></div>
+      <label for="obs">Horário previsto e tipo de evento <span>(opcional)</span></label>
+      <textarea id="obs" maxlength="400" placeholder="Ex.: aniversário, das 19h às 23h, umas 60 pessoas"></textarea>
+    </div>
+
+    <div id="bloco-dados" hidden>
+      <h2 id="titulo-dados">4. Seus dados</h2>
+      <label for="nome">Nome completo</label>
+      <input id="nome" autocomplete="name" maxlength="80">
+      <label for="tel">Telefone com DDD</label>
+      <input id="tel" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="(67) 99999-9999">
+      <label for="email">E-mail <span>(opcional, para o comprovante)</span></label>
+      <input id="email" type="email" autocomplete="email" maxlength="120">
+      <div class="resumo" id="resumo"></div>
+      <div class="erro" id="erro" hidden></div>
+      <button class="btn" id="btn-pix" type="button">Gerar PIX</button>
+    </div>
+  </section>
+
+  <section id="passo-pix" hidden>
+    <div class="card pix">
+      <h2 style="margin-top:4px">Pague com PIX para confirmar</h2>
+      <p style="margin:0 0 12px">Seu horário fica segurado por <span class="timer" id="timer">--:--</span></p>
+      <img id="qr" alt="QR Code do PIX" hidden>
+      <div class="codigo" id="codigo"></div>
+      <button class="btn" id="btn-copiar" type="button">Copiar código PIX</button>
+      <div class="status"><span class="dot"></span><span id="status-txt">Aguardando pagamento…</span></div>
+      <div class="resumo" id="resumo-pix" style="text-align:left"></div>
+      <button class="btn sec" id="btn-simular" type="button" hidden>Simular pagamento (teste)</button>
+    </div>
+  </section>
+
+  <section id="passo-ok" hidden>
+    <div class="card okbox">
+      <div class="big">✅</div>
+      <h3>Reserva confirmada!</h3>
+      <div class="resumo" id="resumo-ok" style="text-align:left"></div>
+      <p class="vazio">Guarde o comprovante do PIX. Dúvidas? Fale com a gente no Direct do Instagram <a href="https://instagram.com/arenakanoa">@arenakanoa</a>.</p>
+      <button class="btn sec" type="button" onclick="novaReserva()">Fazer outra reserva</button>
+    </div>
+  </section>
+
+  <section id="passo-expirou" hidden>
+    <div class="card okbox">
+      <div class="big">⏱️</div>
+      <h3>O prazo do PIX acabou</h3>
+      <p class="vazio">O horário foi liberado. Se você já pagou, não se preocupe: fale com a gente no Direct <a href="https://instagram.com/arenakanoa">@arenakanoa</a> com o comprovante.</p>
+      <button class="btn" type="button" onclick="novaReserva()">Escolher de novo</button>
+    </div>
+  </section>
+</main>
+<footer>Arena Kanoa · Parque das Roseiras · Sete Quedas-MS</footer>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const brl = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const DW = ['D','S','T','Q','Q','S','S'];
+const fmtDur = (m) => m % 60 ? `${Math.floor(m/60)}h${m%60}` : `${m/60}h`;
+const fmtData = (d) => { const [y,m,dd] = d.split('-'); const w = new Date(`${d}T12:00:00`).toLocaleDateString('pt-BR',{weekday:'long'}); return `${w}, ${dd}/${m}/${y}`; };
+const somaMin = (hhmm, min) => { const [h,m] = hhmm.split(':').map(Number); const t = h*60+m+min; return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`; };
+
+const st = { tipo: 'quadra', cfg: null, ano: 0, mes: 0, dias: [], data: null, dia: null, dur: 120, quadras: 1, inicio: null, espaco: null, reserva: null };
+const guarda = { get(){ try { return localStorage.getItem('arena_reserva'); } catch { return null; } }, set(v){ try { v ? localStorage.setItem('arena_reserva', v) : localStorage.removeItem('arena_reserva'); } catch {} } };
+
+async function api(url, opts) {
+  const r = await fetch(url, opts);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.erro || 'Falha de conexão. Tente de novo.');
+  return j;
+}
+
+async function iniciar() {
+  st.cfg = await api('/api/config');
+  if (st.cfg.modoTeste) $('#aviso-teste').hidden = false;
+  const [y, m] = st.cfg.hoje.split('-').map(Number);
+  st.ano = y; st.mes = m;
+  if (st.cfg.duracoes.includes(120)) st.dur = 120; else st.dur = st.cfg.duracoes[0];
+  const pend = guarda.get();
+  if (pend) { try { const r = await api(`/api/reservas/${pend}`); if (r.status === 'pendente') return mostrarPix(r); if (r.status === 'confirmada') return mostrarOk(r); } catch {} guarda.set(null); }
+  await carregarMes();
+}
+
+document.querySelectorAll('.tabs button').forEach((b) => b.onclick = () => {
+  st.tipo = b.dataset.tipo;
+  document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+  st.inicio = null; st.espaco = null;
+  renderCal(); renderDia();
+});
+$('#mes-ant').onclick = () => { st.mes--; if (st.mes < 1) { st.mes = 12; st.ano--; } carregarMes(); };
+$('#mes-prox').onclick = () => { st.mes++; if (st.mes > 12) { st.mes = 1; st.ano++; } carregarMes(); };
+
+async function carregarMes() {
+  $('#mes-nome').textContent = `${MESES[st.mes-1]} ${st.ano}`;
+  const j = await api(`/api/mes?ano=${st.ano}&mes=${st.mes}`);
+  st.dias = j.dias;
+  renderCal();
+}
+
+function diaLivre(d) {
+  if (!d.aberto) return false;
+  return st.tipo === 'quadra' ? d.quadra : (d.arena || d.quiosque);
+}
+
+function renderCal() {
+  const [hy, hm] = st.cfg.hoje.split('-').map(Number);
+  $('#mes-ant').disabled = st.ano < hy || (st.ano === hy && st.mes <= hm);
+  const lim = new Date(`${st.cfg.hoje}T12:00:00`); lim.setDate(lim.getDate() + st.cfg.diasAntecedencia);
+  $('#mes-prox').disabled = new Date(st.ano, st.mes, 1) > lim;
+  const cal = $('#cal');
+  cal.innerHTML = DW.map((d) => `<div class="dw">${d}</div>`).join('');
+  const pad = new Date(st.ano, st.mes-1, 1).getDay();
+  for (let i = 0; i < pad; i++) cal.insertAdjacentHTML('beforeend', '<span></span>');
+  for (const d of st.dias) {
+    const n = Number(d.data.slice(8));
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.innerHTML = `${n}${d.aberto && d.fimDeSemana ? '<span class="fds"></span>' : ''}`;
+    if (!d.aberto) { b.className = 'fora'; b.disabled = true; }
+    else if (!diaLivre(d)) { b.className = 'ocup'; b.disabled = true; b.title = 'Indisponível'; }
+    else { b.className = 'livre' + (d.data === st.data ? ' sel' : ''); b.onclick = () => escolherDia(d.data); }
+    b.setAttribute('aria-label', `${n} de ${MESES[st.mes-1]}${b.disabled ? ', indisponível' : ''}`);
+    cal.appendChild(b);
+  }
+  if (st.data && !st.dias.some((d) => d.data === st.data && diaLivre(d))) { if (st.data.startsWith(`${st.ano}-${String(st.mes).padStart(2,'0')}`)) { st.data = null; st.dia = null; renderDia(); } }
+}
+
+async function escolherDia(data) {
+  st.data = data; st.inicio = null; st.espaco = null;
+  renderCal();
+  await carregarDia();
+  (st.tipo === 'quadra' ? $('#bloco-quadra') : $('#bloco-evento')).scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function carregarDia() {
+  if (!st.data) return renderDia();
+  st.dia = await api(`/api/dia?data=${st.data}&dur=${st.dur}&quadras=${st.quadras}`);
+  renderDia();
+}
+
+function renderDia() {
+  const temDia = !!(st.data && st.dia);
+  $('#bloco-quadra').hidden = !(temDia && st.tipo === 'quadra');
+  $('#bloco-evento').hidden = !(temDia && st.tipo === 'evento');
+  if (!temDia) { $('#bloco-dados').hidden = true; return; }
+  if (st.tipo === 'quadra') {
+    $('#duracoes').innerHTML = st.cfg.duracoes.map((m) => `<button type="button" class="chip" data-dur="${m}" aria-pressed="${m===st.dur}">${fmtDur(m)}</button>`).join('');
+    $('#nquadras').innerHTML = [1, 2].slice(0, st.cfg.totalQuadras).map((q) => `<button type="button" class="chip" data-q="${q}" aria-pressed="${q===st.quadras}">${q} quadra${q>1?'s':''}</button>`).join('');
+    document.querySelectorAll('#duracoes .chip').forEach((b) => b.onclick = () => { st.dur = Number(b.dataset.dur); st.inicio = null; carregarDia(); });
+    document.querySelectorAll('#nquadras .chip').forEach((b) => b.onclick = () => { st.quadras = Number(b.dataset.q); st.inicio = null; carregarDia(); });
+    const hs = st.dia.quadra.horarios;
+    $('#horarios').innerHTML = hs.length
+      ? hs.map((h) => `<button type="button" class="chip hora" data-h="${h}" aria-pressed="${h===st.inicio}">${h}</button>`).join('')
+      : '<p class="vazio">Sem horário livre com essa combinação. Tente menos tempo, 1 quadra ou outro dia.</p>';
+    document.querySelectorAll('#horarios .chip').forEach((b) => b.onclick = () => { st.inicio = b.dataset.h; renderDia(); $('#bloco-dados').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    $('#titulo-dados').textContent = '4. Seus dados';
+  } else {
+    const nomes = { arena: ['Arena toda', 'Quadras, barracão, cozinha, quiosque e área verde'], quiosque: ['Quiosque', st.dia.fimDeSemana ? 'Espaço do quiosque' : 'Espaço do quiosque · a partir das 17h'] };
+    $('#espacos').innerHTML = st.dia.eventos.map((e) => `
+      <button type="button" class="esp" data-esp="${e.espaco}" aria-pressed="${e.espaco===st.espaco}" ${e.livre ? '' : 'disabled'}>
+        <div><b>${nomes[e.espaco][0]}</b><small>${e.livre ? nomes[e.espaco][1] : 'Indisponível nesta data'}</small></div>
+        <div class="preco">${brl(e.valor)}${e.sinal < e.valor ? `<small>sinal de ${brl(e.sinal)} no PIX</small>` : ''}</div>
+      </button>`).join('');
+    document.querySelectorAll('.esp').forEach((b) => b.onclick = () => { st.espaco = b.dataset.esp; renderDia(); $('#bloco-dados').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    $('#titulo-dados').textContent = '3. Seus dados';
+  }
+  const pronto = st.tipo === 'quadra' ? !!st.inicio : !!st.espaco;
+  $('#bloco-dados').hidden = !pronto;
+  if (pronto) renderResumo();
+}
+
+function linhasResumo() {
+  if (st.tipo === 'quadra') {
+    const v = st.dia.quadra.valor;
+    return { html: `<div><b>${fmtData(st.data)}</b></div><div>${st.quadras} quadra${st.quadras>1?'s':''} · ${st.inicio} às ${somaMin(st.inicio, st.dur)} (${fmtDur(st.dur)})</div><div class="total">${brl(v)}</div>`, pix: v };
+  }
+  const e = st.dia.eventos.find((x) => x.espaco === st.espaco);
+  const nome = st.espaco === 'arena' ? 'Arena toda' : 'Quiosque';
+  const sinal = e.sinal < e.valor;
+  return { html: `<div><b>${fmtData(st.data)}</b></div><div>Evento · ${nome}</div><div class="total">${brl(e.valor)}</div>${sinal ? `<div class="nota">Agora você paga o sinal de <b>${brl(e.sinal)}</b> para garantir a data. O restante (${brl(e.valor - e.sinal)}) é pago no dia do evento.</div>` : ''}`, pix: e.sinal };
+}
+function renderResumo() {
+  const r = linhasResumo();
+  $('#resumo').innerHTML = r.html + `<div class="nota">O horário fica segurado por ${st.cfg.holdMin} minutos enquanto você paga.</div>`;
+  $('#btn-pix').textContent = `Gerar PIX de ${brl(r.pix)}`;
+}
+
+$('#btn-pix').onclick = async () => {
+  const btn = $('#btn-pix'); const err = $('#erro');
+  err.hidden = true;
+  const body = { tipo: st.tipo, data: st.data, nome: $('#nome').value.trim(), telefone: $('#tel').value.trim(), email: $('#email').value.trim() };
+  if (st.tipo === 'quadra') Object.assign(body, { dur: st.dur, quadras: st.quadras, inicio: st.inicio });
+  else Object.assign(body, { espaco: st.espaco, obs: $('#obs').value.trim() });
+  if (body.nome.length < 3) { err.textContent = 'Informe seu nome.'; err.hidden = false; return; }
+  if (body.telefone.replace(/\D/g,'').length < 10) { err.textContent = 'Informe um telefone com DDD.'; err.hidden = false; return; }
+  btn.disabled = true; btn.textContent = 'Gerando PIX…';
+  try {
+    const r = await api('/api/reservas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    guarda.set(r.id);
+    mostrarPix(r);
+  } catch (e) {
+    err.textContent = e.message; err.hidden = false;
+    btn.disabled = false; renderResumo();
+    if (/ocupado|disponível/.test(e.message)) { st.inicio = null; st.espaco = null; await carregarMes(); await carregarDia(); }
+  }
+};
+
+function resumoReserva(r) {
+  const quando = `<div><b>${fmtData(r.data)}</b></div>`;
+  const oque = r.tipo === 'quadra' ? `<div>${r.quadras} quadra${r.quadras>1?'s':''} · ${r.inicio} às ${r.fim}</div>` : `<div>Evento · ${r.espaco === 'arena' ? 'Arena toda' : 'Quiosque'}</div>`;
+  const val = r.valorPix < r.valor ? `<div>Sinal: <b>${brl(r.valorPix)}</b> · restante ${brl(r.valor - r.valorPix)} no dia</div>` : `<div>Valor: <b>${brl(r.valor)}</b></div>`;
+  return quando + oque + val;
+}
+
+let poll = null, tick = null;
+function mostrarPix(r) {
+  st.reserva = r;
+  ['#passo-escolha', '#passo-ok', '#passo-expirou'].forEach((s) => $(s).hidden = true);
+  $('#passo-pix').hidden = false;
+  if (r.qr) { $('#qr').src = `data:image/png;base64,${r.qr}`; $('#qr').hidden = false; } else $('#qr').hidden = true;
+  $('#codigo').textContent = r.copia || '';
+  $('#resumo-pix').innerHTML = resumoReserva(r);
+  $('#btn-simular').hidden = !st.cfg.modoTeste;
+  window.scrollTo({ top: 0 });
+  clearInterval(tick); clearInterval(poll);
+  const fim = Date.parse(r.expiraEm);
+  const atualiza = () => {
+    const s = Math.max(0, Math.round((fim - Date.now()) / 1000));
+    $('#timer').textContent = `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  };
+  atualiza(); tick = setInterval(atualiza, 1000);
+  poll = setInterval(verificar, 5000);
+}
+async function verificar() {
+  if (!st.reserva) return;
+  try {
+    const r = await api(`/api/reservas/${st.reserva.id}`);
+    if (r.status === 'confirmada') mostrarOk(r);
+    else if (r.status === 'expirada' || r.status === 'cancelada') mostrarExpirou();
+    else if (r.status === 'conflito') { $('#status-txt').textContent = 'Pagamento recebido. Vamos entrar em contato sobre o horário.'; clearInterval(poll); }
+  } catch {}
+}
+$('#btn-copiar').onclick = async () => {
+  try { await navigator.clipboard.writeText($('#codigo').textContent); $('#btn-copiar').textContent = 'Código copiado ✓'; }
+  catch { const s = window.getSelection(); const rg = document.createRange(); rg.selectNodeContents($('#codigo')); s.removeAllRanges(); s.addRange(rg); $('#btn-copiar').textContent = 'Selecionado — copie'; }
+  setTimeout(() => $('#btn-copiar').textContent = 'Copiar código PIX', 2500);
+};
+$('#btn-simular').onclick = async () => {
+  try { await api(`/api/teste/pagar/${st.reserva.id}`, { method: 'POST' }); verificar(); } catch (e) { alert(e.message); }
+};
+function mostrarOk(r) {
+  clearInterval(poll); clearInterval(tick); guarda.set(null);
+  ['#passo-escolha', '#passo-pix', '#passo-expirou'].forEach((s) => $(s).hidden = true);
+  $('#passo-ok').hidden = false;
+  $('#resumo-ok').innerHTML = resumoReserva(r);
+  window.scrollTo({ top: 0 });
+}
+function mostrarExpirou() {
+  clearInterval(poll); clearInterval(tick); guarda.set(null);
+  ['#passo-escolha', '#passo-pix', '#passo-ok'].forEach((s) => $(s).hidden = true);
+  $('#passo-expirou').hidden = false;
+}
+async function novaReserva() {
+  st.reserva = null; st.inicio = null; st.espaco = null; st.data = null; st.dia = null;
+  ['#passo-pix', '#passo-ok', '#passo-expirou'].forEach((s) => $(s).hidden = true);
+  $('#passo-escolha').hidden = false;
+  $('#btn-pix').disabled = false;
+  await carregarMes(); renderDia();
+}
+
+iniciar().catch((e) => { document.querySelector('main').insertAdjacentHTML('afterbegin', `<div class="erro">${e.message}</div>`); });
+</script>
+</body>
+</html>

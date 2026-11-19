@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel · Arena Kanoa</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--sand:#F4E4C8;--paper:#FBF6EC;--ink:#2B2116;--muted:#6E5E4C;--line:#E2D2B4;--sea:#1E5BB8;--sun:#FF6A13;--white:#fff;--red:#C62828;--ok:#1F8A4C;
+--display:"Archivo","Arial Narrow",system-ui,sans-serif;--body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font:15px/1.45 var(--body)}
+.wrap{max-width:900px;margin:0 auto;padding:0 16px}
+header{background:var(--ink);color:var(--paper)}
+header .wrap{display:flex;align-items:center;gap:12px;padding-top:10px;padding-bottom:10px}
+header img{width:40px;height:40px;filter:invert(1)}
+header b{font:900 18px var(--display);text-transform:uppercase}
+header button{margin-left:auto;background:transparent;border:1px solid #ffffff55;color:var(--paper);border-radius:999px;padding:6px 12px;cursor:pointer;font:inherit}
+nav{display:flex;gap:6px;overflow-x:auto;padding:12px 0}
+nav button{border:1px solid var(--line);background:var(--white);border-radius:999px;padding:8px 14px;font:700 14px var(--body);cursor:pointer;white-space:nowrap;color:var(--ink)}
+nav button[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.card{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+h2{font:800 14px var(--display);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:18px 0 8px}
+.dia h3{font:800 16px var(--display);margin:0 0 8px;text-transform:capitalize}
+.item{display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;align-items:start;padding:10px 0;border-top:1px solid var(--line)}
+.item:first-of-type{border-top:0}
+.item .hora{font:800 15px var(--display);min-width:92px}
+.item .info small{color:var(--muted);display:block}
+.item .acoes{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.tag{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;margin-right:4px}
+.t-quadra{background:#FDE7E7;color:var(--red)}.t-evento{background:#E3ECFA;color:var(--sea)}.t-fixo{background:#EEE7DA;color:var(--muted)}.t-bloqueio{background:#333;color:#fff}
+.s-confirmada{background:#E3F4EA;color:var(--ok)}.s-pendente{background:#FFF1DE;color:#A35A00}.s-expirada,.s-cancelada{background:#EEE;color:#777}.s-conflito{background:#FDE7E7;color:var(--red)}
+.b{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:5px 11px;font:600 13px var(--body);cursor:pointer;color:var(--ink)}
+.b.pri{background:var(--sun);border-color:var(--sun);color:#fff}.b.dan{color:var(--red)}
+.riscado{text-decoration:line-through;opacity:.55}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal .dw{font-size:12px;font-weight:700;color:var(--muted);text-align:center}
+.cal .d{min-height:74px;border:1px solid var(--line);border-radius:10px;padding:4px;background:var(--white);font-size:11px;overflow:hidden}
+.cal .d b{font-size:13px}
+.cal .d .ev{background:var(--sea);color:#fff;border-radius:5px;padding:1px 4px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal .d .qd{background:var(--red);color:#fff;border-radius:5px;padding:1px 4px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal .d .fx{color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.cal-head b{font:800 17px var(--display);text-transform:capitalize}
+label{display:block;font-weight:600;font-size:13px;margin:10px 0 4px}
+input,select,textarea{width:100%;font:15px var(--body);padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--white);color:var(--ink)}
+textarea{min-height:120px;font:13px ui-monospace,Menlo,monospace}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{display:inline-block;border:0;background:var(--sun);color:#fff;font:800 15px var(--display);text-transform:uppercase;padding:12px 20px;border-radius:999px;margin-top:14px;cursor:pointer}
+.msg{margin-top:10px;font-weight:600}.msg.err{color:var(--red)}.msg.ok{color:var(--ok)}
+.login{max-width:360px;margin:12vh auto;text-align:center}
+.login img{width:90px}
+.vazio{color:var(--muted)}
+.resumo{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.resumo .card{margin:0}.resumo b{font:900 22px var(--display);display:block}
+.teste{background:#FFF4D6;border:1px solid #F0D58A;color:#6B4E00;border-radius:10px;padding:8px 12px;font-size:13px;margin-bottom:10px}
+[hidden]{display:none!important}
+@media (max-width:560px){.item{grid-template-columns:1fr}.item .acoes{justify-content:flex-start}.grid2{grid-template-columns:1fr}.cal .d{min-height:58px;font-size:10px}}
+</style>
+</head>
+<body>
+<div id="tela-login" class="login wrap" hidden>
+  <img src="/logo.png" alt="">
+  <h2>Painel de reservas</h2>
+  <form id="f-login"><input type="password" id="senha" placeholder="Senha" autocomplete="current-password"><button class="btn" style="width:100%">Entrar</button></form>
+  <div class="msg err" id="login-erro"></div>
+</div>
+
+<div id="app" hidden>
+<header><div class="wrap"><img src="/logo.png" alt=""><b>Reservas</b><button id="sair">Sair</button></div></header>
+<div class="wrap">
+  <nav>
+    <button data-aba="agenda" aria-pressed="true">Agenda</button>
+    <button data-aba="cal">Calendário</button>
+    <button data-aba="nova">Nova reserva</button>
+    <button data-aba="config">Configurações</button>
+  </nav>
+  <div id="aviso-teste" class="teste" hidden>Mercado Pago em modo de teste (falta configurar o token). Os PIX não são reais.</div>
+
+  <section id="aba-agenda">
+    <div class="resumo" id="resumo"></div>
+    <div id="lista"></div>
+  </section>
+
+  <section id="aba-cal" hidden>
+    <div class="card">
+      <div class="cal-head"><button class="b" id="c-ant">‹</button><b id="c-nome"></b><button class="b" id="c-prox">›</button></div>
+      <div class="cal" id="cal"></div>
+    </div>
+  </section>
+
+  <section id="aba-nova" hidden>
+    <div class="card">
+      <p class="vazio" style="margin-top:0">Para reservas combinadas por fora (telefone, pessoalmente) ou para bloquear datas. Não gera PIX.</p>
+      <form id="f-nova">
+        <div class="grid2">
+          <div><label>Tipo</label><select id="n-tipo"><option value="quadra">Quadra</option><option value="evento">Evento</option><option value="bloqueio">Bloqueio</option></select></div>
+          <div><label>Data</label><input type="date" id="n-data" required></div>
+        </div>
+        <div class="grid2" id="n-horas">
+          <div><label>Início</label><input type="time" id="n-ini" step="1800"></div>
+          <div><label>Fim</label><input type="time" id="n-fim" step="1800"></div>
+        </div>
+        <div class="grid2">
+          <div id="n-q-box"><label>Quadras</label><select id="n-q"><option>1</option><option>2</option></select></div>
+          <div id="n-esp-box" hidden><label>Espaço</label><select id="n-esp"><option value="arena">Arena toda</option><option value="quiosque">Quiosque</option><option value="tudo">Tudo (bloqueia o dia)</option></select></div>
+          <div><label>Valor (R$) <small class="vazio">vazio = tabela</small></label><input type="number" step="0.01" id="n-valor"></div>
+        </div>
+        <div class="grid2">
+          <div><label>Responsável</label><input id="n-resp"></div>
+          <div><label>Telefone</label><input id="n-tel"></div>
+        </div>
+        <div class="grid2">
+          <div><label>Situação</label><select id="n-status"><option value="confirmada">Confirmada (paga)</option><option value="pendente">A receber (segura a data)</option></select></div>
+          <div><label>Observação</label><input id="n-obs"></div>
+        </div>
+        <button class="btn">Salvar reserva</button>
+        <div class="msg" id="n-msg"></div>
+      </form>
+    </div>
+  </section>
+
+  <section id="aba-config" hidden>
+    <div class="card">
+      <form id="f-cfg">
+        <div class="grid2">
+          <div><label>Valor da hora por quadra (R$)</label><input type="number" step="0.01" id="c-hora"></div>
+          <div><label>Salário mínimo (R$)</label><input type="number" step="0.01" id="c-sm"></div>
+        </div>
+        <div class="grid2">
+          <div><label>Abre</label><input type="time" id="c-abre" step="1800"></div>
+          <div><label>Fecha</label><input type="time" id="c-fecha" step="1800"></div>
+        </div>
+        <div class="grid2">
+          <div><label>Arena toda · dia de semana</label><input type="number" id="c-a-sem"></div>
+          <div><label>Arena toda · fim de semana/feriado <small class="vazio">0 = salário mínimo</small></label><input type="number" id="c-a-fds"></div>
+        </div>
+        <div class="grid2">
+          <div><label>Quiosque · dia de semana</label><input type="number" id="c-q-sem"></div>
+          <div><label>Quiosque · fim de semana/feriado</label><input type="number" id="c-q-fds"></div>
+        </div>
+        <div class="grid2">
+          <div><label>Sinal do evento no PIX (%)</label><input type="number" min="1" max="100" id="c-sinal"></div>
+          <div><label>Minutos segurando o horário</label><input type="number" min="10" max="120" id="c-hold"></div>
+        </div>
+        <label>Feriados (um por linha, AAAA-MM-DD)</label>
+        <textarea id="c-feriados"></textarea>
+        <label>Horários fixos (dias: 0=dom, 1=seg … 6=sáb)</label>
+        <textarea id="c-fixos" style="min-height:160px"></textarea>
+        <button class="btn">Salvar configurações</button>
+        <div class="msg" id="c-msg"></div>
+      </form>
+    </div>
+  </section>
+</div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const brl = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const hojeStr = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
+const addDias = (s, n) => { const d = new Date(`${s}T12:00:00`); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+const fmtDia = (s) => new Date(`${s}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' });
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+
+async function api(url, opts = {}) {
+  const r = await fetch(url, { ...opts, headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) } });
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 401 && !url.includes('login')) { mostrarLogin(); throw new Error('login'); }
+  if (!r.ok) throw new Error(j.erro || 'Falha');
+  return j;
+}
+function mostrarLogin() { $('#app').hidden = true; $('#tela-login').hidden = false; $('#senha').focus(); }
+$('#f-login').onsubmit = async (e) => {
+  e.preventDefault();
+  try { await api('/admin/login', { method: 'POST', body: JSON.stringify({ senha: $('#senha').value }) }); $('#senha').value = ''; abrir(); }
+  catch (er) { $('#login-erro').textContent = er.message; }
+};
+$('#sair').onclick = async () => { await fetch('/admin/logout', { method: 'POST' }); mostrarLogin(); };
+
+document.querySelectorAll('nav button').forEach((b) => b.onclick = () => {
+  document.querySelectorAll('nav button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+  ['agenda','cal','nova','config'].forEach((a) => $(`#aba-${a}`).hidden = a !== b.dataset.aba);
+  if (b.dataset.aba === 'agenda') carregarAgenda();
+  if (b.dataset.aba === 'cal') carregarCal();
+  if (b.dataset.aba === 'config') carregarCfg();
+});
+
+async function abrir() {
+  $('#tela-login').hidden = true;
+  try { await carregarAgenda(); $('#app').hidden = false; } catch (e) { if (e.message !== 'login') alert(e.message); }
+}
+
+// ---------- agenda ----------
+async function carregarAgenda() {
+  const de = hojeStr(), ate = addDias(de, 60);
+  const j = await api(`/admin/api/reservas?de=${de}&ate=${ate}`);
+  $('#aviso-teste').hidden = !j.modoTeste;
+  const ativas = j.reservas.filter((r) => ['confirmada','pendente','conflito'].includes(r.status));
+  const semana = addDias(de, 7);
+  const n7 = ativas.filter((r) => r.data < semana);
+  $('#resumo').innerHTML = `
+    <div class="card"><small class="vazio">Próximos 7 dias</small><b>${n7.length}</b><small class="vazio">reservas</small></div>
+    <div class="card"><small class="vazio">Eventos (60 dias)</small><b>${ativas.filter((r)=>r.tipo==='evento').length}</b></div>
+    <div class="card"><small class="vazio">Pendentes (PIX ou a receber)</small><b>${ativas.filter((r)=>r.status==='pendente').length}</b></div>
+    <div class="card"><small class="vazio">Recebido pelo site (60 dias)</small><b>${brl(j.reservas.filter((r)=>r.status==='confirmada'&&r.origem==='site').reduce((s,r)=>s+Number(r.valor_pix||0),0))}</b></div>`;
+  const dias = {};
+  for (const r of j.reservas) (dias[r.data] ||= { r: [], f: [] }).r.push(r);
+  for (const f of j.fixos) (dias[f.data] ||= { r: [], f: [] }).f.push(f);
+  const datas = Object.keys(dias).sort();
+  $('#lista').innerHTML = datas.length ? datas.map((d) => {
+    const itens = [
+      ...dias[d].r.map((r) => ({ ord: r.inicio || '00:00', html: itemReserva(r) })),
+      ...dias[d].f.map((f) => ({ ord: f.inicio, html: itemFixo(f) })),
+    ].sort((a, b) => a.ord.localeCompare(b.ord));
+    return `<div class="card dia"><h3>${fmtDia(d)}</h3>${itens.map((i) => i.html).join('')}</div>`;
+  }).join('') : '<p class="vazio">Nenhuma reserva nos próximos 60 dias.</p>';
+  bindAcoes();
+}
+function itemReserva(r) {
+  const tipo = r.tipo === 'evento' ? `Evento · ${r.espaco === 'arena' ? 'arena toda' : 'quiosque'}` : r.tipo === 'bloqueio' ? `Bloqueio${r.espaco==='tudo'?' · dia todo':''}` : `${r.quadras} quadra${r.quadras>1?'s':''}`;
+  const hora = r.inicio ? `${r.inicio}–${r.fim}` : 'dia todo';
+  const inativo = ['cancelada','expirada'].includes(r.status);
+  const pago = r.valor_pix && r.valor_pix < r.valor ? ` · sinal ${brl(r.valor_pix)}` : '';
+  const acoes = [];
+  if (['pendente','expirada'].includes(r.status)) acoes.push(`<button class="b pri" data-acao="confirmar" data-id="${r.id}">Marcar pago</button>`);
+  if (r.status === 'pendente' && $('#aviso-teste').hidden === false && r.origem === 'site') acoes.push(`<button class="b" data-acao="simular_pago" data-id="${r.id}">Simular PIX</button>`);
+  if (!['cancelada'].includes(r.status)) acoes.push(`<button class="b dan" data-acao="cancelar" data-id="${r.id}">Cancelar</button>`);
+  return `<div class="item ${inativo ? 'riscado' : ''}">
+    <div class="hora">${hora}</div>
+    <div class="info"><span class="tag t-${r.tipo}">${tipo}</span><span class="tag s-${r.status}">${r.status === 'pendente' ? (r.origem === 'site' ? 'aguardando PIX' : 'a receber') : r.status}</span>
+      <div><b>${esc(r.resp) || '—'}</b> ${r.telefone ? `· <a href="tel:${esc(r.telefone)}">${esc(r.telefone)}</a>` : ''}</div>
+      <small>${brl(r.valor)}${pago} · ${r.origem === 'site' ? 'pelo site' : 'pelo painel'}${r.obs ? ` · ${esc(r.obs)}` : ''}</small></div>
+    <div class="acoes">${acoes.join('')}</div></div>`;
+}
+function itemFixo(f) {
+  const off = f.cancelado || f.cedeAoEvento;
+  return `<div class="item ${off ? 'riscado' : ''}">
+    <div class="hora">${f.inicio}–${f.fim}</div>
+    <div class="info"><span class="tag t-fixo">Fixo</span><b>${esc(f.nome)}</b> · ${f.quadras} quadra${f.quadras>1?'s':''}${f.cedeAoEvento ? '<small>Não acontece: evento da arena neste dia</small>' : ''}${f.cancelado ? '<small>Cancelado neste dia</small>' : ''}</div>
+    <div class="acoes">${f.cedeAoEvento ? '' : `<button class="b" data-fixo="${f.fixoId}" data-data="${f.data}" data-cancelar="${!f.cancelado}">${f.cancelado ? 'Reativar' : 'Cancelar neste dia'}</button>`}</div></div>`;
+}
+function bindAcoes() {
+  document.querySelectorAll('[data-acao]').forEach((b) => b.onclick = async () => {
+    if (b.dataset.acao === 'cancelar' && !confirm('Cancelar esta reserva? O horário fica livre de novo.')) return;
+    await api(`/admin/api/reservas/${b.dataset.id}`, { method: 'POST', body: JSON.stringify({ acao: b.dataset.acao }) });
+    carregarAgenda();
+  });
+  document.querySelectorAll('[data-fixo]').forEach((b) => b.onclick = async () => {
+    await api('/admin/api/fixo', { method: 'POST', body: JSON.stringify({ data: b.dataset.data, fixoId: b.dataset.fixo, cancelar: b.dataset.cancelar === 'true' }) });
+    carregarAgenda();
+  });
+}
+
+// ---------- calendário ----------
+let cAno, cMes;
+{ const h = hojeStr().split('-').map(Number); cAno = h[0]; cMes = h[1]; }
+$('#c-ant').onclick = () => { cMes--; if (cMes < 1) { cMes = 12; cAno--; } carregarCal(); };
+$('#c-prox').onclick = () => { cMes++; if (cMes > 12) { cMes = 1; cAno++; } carregarCal(); };
+async function carregarCal() {
+  const de = `${cAno}-${String(cMes).padStart(2,'0')}-01`;
+  const n = new Date(cAno, cMes, 0).getDate();
+  const ate = `${cAno}-${String(cMes).padStart(2,'0')}-${n}`;
+  const j = await api(`/admin/api/reservas?de=${de}&ate=${ate}`);
+  $('#c-nome').textContent = `${MESES[cMes-1]} ${cAno}`;
+  let h = ['D','S','T','Q','Q','S','S'].map((d) => `<div class="dw">${d}</div>`).join('');
+  for (let i = 0; i < new Date(cAno, cMes-1, 1).getDay(); i++) h += '<span></span>';
+  for (let d = 1; d <= n; d++) {
+    const ds = `${cAno}-${String(cMes).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const rs = j.reservas.filter((r) => r.data === ds && ['confirmada','pendente','conflito'].includes(r.status));
+    const fx = j.fixos.filter((f) => f.data === ds && !f.cancelado && !f.cedeAoEvento);
+    h += `<div class="d"><b>${d}</b>${rs.filter((r)=>r.tipo!=='quadra').map((r) => `<div class="ev">${esc(r.resp || (r.tipo==='bloqueio'?'Bloqueio':'Evento'))}</div>`).join('')}${rs.filter((r)=>r.tipo==='quadra').map((r) => `<div class="qd">${r.inicio} ${esc((r.resp||'').split(' ')[0])}</div>`).join('')}${fx.map((f) => `<div class="fx">${f.inicio} ${esc(f.nome)}</div>`).join('')}</div>`;
+  }
+  $('#cal').innerHTML = h;
+}
+
+// ---------- nova reserva ----------
+$('#n-data').value = hojeStr();
+function ajustaForm() {
+  const t = $('#n-tipo').value;
+  $('#n-q-box').hidden = t === 'evento';
+  $('#n-esp-box').hidden = t === 'quadra';
+  $('#n-horas').hidden = false;
+  [...$('#n-esp').options].forEach((o) => o.hidden = (t === 'evento' && o.value === 'tudo'));
+  if (t === 'evento' && $('#n-esp').value === 'tudo') $('#n-esp').value = 'arena';
+}
+$('#n-tipo').onchange = ajustaForm; ajustaForm();
+$('#f-nova').onsubmit = async (e) => {
+  e.preventDefault();
+  const t = $('#n-tipo').value;
+  const body = { tipo: t, data: $('#n-data').value, inicio: $('#n-ini').value || null, fim: $('#n-fim').value || null,
+    quadras: t === 'evento' ? 0 : Number($('#n-q').value), espaco: t === 'quadra' ? null : $('#n-esp').value,
+    valor: $('#n-valor').value !== '' ? Number($('#n-valor').value) : null, resp: $('#n-resp').value, telefone: $('#n-tel').value,
+    status: $('#n-status').value, obs: $('#n-obs').value };
+  if (t === 'bloqueio' && body.espaco === 'tudo') { body.inicio = null; body.fim = null; }
+  try {
+    await api('/admin/api/reservas', { method: 'POST', body: JSON.stringify(body) });
+    $('#n-msg').className = 'msg ok'; $('#n-msg').textContent = 'Reserva salva.';
+    $('#f-nova').reset(); $('#n-data').value = body.data; ajustaForm();
+  } catch (er) { $('#n-msg').className = 'msg err'; $('#n-msg').textContent = er.message; }
+};
+
+// ---------- configurações ----------
+async function carregarCfg() {
+  const c = await api('/admin/api/config');
+  $('#c-hora').value = c.valorHora; $('#c-sm').value = c.salarioMinimo; $('#c-abre').value = c.abre; $('#c-fecha').value = c.fecha;
+  $('#c-a-sem').value = c.precos.arena.semana; $('#c-a-fds').value = c.precos.arena.fimDeSemana === 'salarioMinimo' ? 0 : c.precos.arena.fimDeSemana;
+  $('#c-q-sem').value = c.precos.quiosque.semana; $('#c-q-fds').value = c.precos.quiosque.fimDeSemana;
+  $('#c-sinal').value = c.sinalEventoPct; $('#c-hold').value = c.holdMin;
+  $('#c-feriados').value = (c.feriados || []).join('\n');
+  $('#c-fixos').value = JSON.stringify(c.fixos, null, 2);
+}
+$('#f-cfg').onsubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const fixos = JSON.parse($('#c-fixos').value);
+    const afds = Number($('#c-a-fds').value);
+    const body = {
+      valorHora: Number($('#c-hora').value), salarioMinimo: Number($('#c-sm').value), abre: $('#c-abre').value, fecha: $('#c-fecha').value,
+      precos: { arena: { semana: Number($('#c-a-sem').value), fimDeSemana: afds ? afds : 'salarioMinimo' }, quiosque: { semana: Number($('#c-q-sem').value), fimDeSemana: Number($('#c-q-fds').value) } },
+      sinalEventoPct: Number($('#c-sinal').value), holdMin: Number($('#c-hold').value),
+      feriados: $('#c-feriados').value.split(/\s+/).filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x)), fixos,
+    };
+    await api('/admin/api/config', { method: 'PUT', body: JSON.stringify(body) });
+    $('#c-msg').className = 'msg ok'; $('#c-msg').textContent = 'Configurações salvas.';
+  } catch (er) { $('#c-msg').className = 'msg err'; $('#c-msg').textContent = er.message.includes('JSON') ? 'Os horários fixos têm um erro de formatação.' : er.message; }
+};
+
+abrir();
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+[
+  {"tipo":"evento","data":"2026-11-20","inicio":"14:00","fim":"21:00","espaco":"arena","resp":"Emerson","valor":1500,"status":"pendente","obs":"feriado; paga no dia"},
+  {"tipo":"evento","data":"2026-11-22","inicio":"10:00","fim":"21:00","espaco":"arena","resp":"Igreja","valor":0,"status":"confirmada","obs":"sem cobrança"},
+  {"tipo":"evento","data":"2026-11-25","inicio":"12:00","fim":"21:00","espaco":"arena","resp":"Rafael Nardi","valor":1000,"status":"pendente","obs":"paga no dia"},
+  {"tipo":"evento","data":"2026-11-29","espaco":"arena","resp":"Juliana Simon","valor":1300,"status":"pendente","obs":"paga no dia; valor combinado"},
+  {"tipo":"evento","data":"2026-12-01","espaco":"arena","resp":"Jenis","valor":1000,"status":"pendente","obs":"paga no dia"},
+  {"tipo":"evento","data":"2026-12-05","inicio":"10:00","fim":"23:00","espaco":"arena","resp":"Renato Gordura","valor":1621,"status":"pendente","obs":"paga no dia"}
+]
