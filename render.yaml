@@ -24,8 +24,16 @@ services:
         generateValue: true
       - key: EXPORT_TOKEN
         generateValue: true
+      - key: ADMIN_USER
+        value: Guilherme
       - key: ADMIN_PASSWORD
         sync: false
+      - key: PIX_CHAVE
+        sync: false
+      - key: PIX_NOME
+        value: Arena Kanoa
+      - key: PIX_CIDADE
+        value: Sete Quedas
       - key: MP_ACCESS_TOKEN
         sync: false
       - key: MP_WEBHOOK_SECRET

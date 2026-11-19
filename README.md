@@ -12,8 +12,9 @@ Reserva de quadras e eventos com pagamento por PIX (Mercado Pago).
 | Nome | Para quê |
 |---|---|
 | DATABASE_URL | Postgres (o Render preenche) |
-| ADMIN_PASSWORD | senha do painel |
-| MP_ACCESS_TOKEN | Access Token de produção do Mercado Pago. Sem ele, roda em modo teste |
+| ADMIN_USER / ADMIN_PASSWORD | primeiro usuário do painel (os outros são criados no painel, aba Usuários) |
+| PIX_CHAVE | chave PIX da Arena, usada no modo PIX manual (antes do Mercado Pago) |
+| MP_ACCESS_TOKEN | Access Token de produção do Mercado Pago. Sem ele, roda em PIX manual |
 | MP_WEBHOOK_SECRET | assinatura secreta do webhook do Mercado Pago |
 | BASE_URL | https://reservas.arenakanoa.com.br |
 | EXPORT_TOKEN, SESSION_SECRET | gerados pelo Render |

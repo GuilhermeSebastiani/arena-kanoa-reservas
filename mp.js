@@ -3,7 +3,35 @@ const crypto = require('node:crypto');
 
 const TOKEN = () => process.env.MP_ACCESS_TOKEN || '';
 const API = 'https://api.mercadopago.com';
-const modoTeste = () => !TOKEN();
+// modo: 'mp' (Mercado Pago com confirmação automática), 'manual' (PIX na chave da Arena, confirmado no painel)
+// ou 'teste' (só local ou com MODO_TESTE=1: PIX simulado)
+function modo() {
+  if (process.env.MODO_PAGAMENTO) return process.env.MODO_PAGAMENTO;
+  if (TOKEN()) return 'mp';
+  if (process.env.MODO_TESTE === '1' || !process.env.DATABASE_URL) return 'teste';
+  return 'manual';
+}
+const modoTeste = () => modo() === 'teste';
+
+// PIX copia e cola (BR Code estático com valor) para a chave da Arena
+function campo(id, v) { return id + String(v.length).padStart(2, '0') + v; }
+function crc16(str) {
+  let crc = 0xffff;
+  for (const b of Buffer.from(str, 'utf8')) {
+    crc ^= b << 8;
+    for (let i = 0; i < 8; i++) crc = crc & 0x8000 ? ((crc << 1) ^ 0x1021) & 0xffff : (crc << 1) & 0xffff;
+  }
+  return crc.toString(16).toUpperCase().padStart(4, '0');
+}
+const semAcento = (s) => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9 ]/g, '').toUpperCase();
+function brCode({ chave, valor, txid, nome, cidade }) {
+  const conta = campo('00', 'br.gov.bcb.pix') + campo('01', chave);
+  let p = campo('00', '01') + campo('26', conta) + campo('52', '0000') + campo('53', '986') +
+    campo('54', valor.toFixed(2)) + campo('58', 'BR') + campo('59', semAcento(nome).slice(0, 25)) +
+    campo('60', semAcento(cidade).slice(0, 15)) + campo('62', campo('05', String(txid).replace(/[^A-Za-z0-9]/g, '').slice(0, 25) || '***'));
+  p += '6304';
+  return p + crc16(p);
+}
 
 function isoBrasilia(date) {
   const d = new Date(date.getTime() - 3 * 3600e3);
@@ -11,6 +39,11 @@ function isoBrasilia(date) {
 }
 
 async function criarPix({ reservaId, valor, descricao, nome, email, expiraEm, notificationUrl }) {
+  if (modo() === 'manual') {
+    const chave = process.env.PIX_CHAVE;
+    const copia = chave ? brCode({ chave, valor, txid: `ARENA${reservaId.replace(/-/g, '').slice(0, 12)}`, nome: process.env.PIX_NOME || 'Arena Kanoa', cidade: process.env.PIX_CIDADE || 'Sete Quedas' }) : null;
+    return { id: `manual_${reservaId}`, status: 'pending', copia, qrBase64: null, teste: false };
+  }
   if (modoTeste()) {
     const fake = `00020126TESTE-ARENA-KANOA-${reservaId.slice(0, 8)}-${valor.toFixed(2)}`;
     return { id: `teste_${reservaId}`, status: 'pending', copia: fake, qrBase64: null, teste: true };
@@ -43,7 +76,7 @@ async function criarPix({ reservaId, valor, descricao, nome, email, expiraEm, no
 }
 
 async function consultar(paymentId) {
-  if (modoTeste() || String(paymentId).startsWith('teste_')) return null;
+  if (modo() !== 'mp' || !/^\d+$/.test(String(paymentId))) return null;
   const r = await fetch(`${API}/v1/payments/${encodeURIComponent(paymentId)}`, {
     headers: { Authorization: `Bearer ${TOKEN()}` },
   });
@@ -69,4 +102,4 @@ function assinaturaValida(headers, dataId) {
   try { return crypto.timingSafeEqual(Buffer.from(calc), Buffer.from(parts.v1)); } catch { return false; }
 }
 
-module.exports = { criarPix, consultar, assinaturaValida, modoTeste };
+module.exports = { criarPix, consultar, assinaturaValida, modoTeste, modo, brCode };

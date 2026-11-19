@@ -6,6 +6,7 @@
 <title>Reservas · Arena Kanoa</title>
 <meta name="description" content="Reserve quadra de areia ou a Arena Kanoa para seu evento. Pagamento por PIX.">
 <link rel="icon" href="/logo.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -154,6 +155,7 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:30px 16px}
       <h2 style="margin-top:4px">Pague com PIX para confirmar</h2>
       <p style="margin:0 0 12px">Seu horário fica segurado por <span class="timer" id="timer">--:--</span></p>
       <img id="qr" alt="QR Code do PIX" hidden>
+      <div id="qr-gerado" style="display:inline-block;padding:10px;background:#fff;border-radius:12px" hidden></div>
       <div class="codigo" id="codigo"></div>
       <button class="btn" id="btn-copiar" type="button">Copiar código PIX</button>
       <div class="status"><span class="dot"></span><span id="status-txt">Aguardando pagamento…</span></div>
@@ -350,7 +352,12 @@ function mostrarPix(r) {
   ['#passo-escolha', '#passo-ok', '#passo-expirou'].forEach((s) => $(s).hidden = true);
   $('#passo-pix').hidden = false;
   if (r.qr) { $('#qr').src = `data:image/png;base64,${r.qr}`; $('#qr').hidden = false; } else $('#qr').hidden = true;
+  $('#qr-gerado').hidden = true; $('#qr-gerado').innerHTML = '';
+  if (!r.qr && r.copia && window.QRCode) { try { new QRCode($('#qr-gerado'), { text: r.copia, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.M }); $('#qr-gerado').hidden = false; } catch {} }
   $('#codigo').textContent = r.copia || '';
+  $('#codigo').hidden = !r.copia; $('#btn-copiar').hidden = !r.copia;
+  const manual = st.cfg.modo === 'manual';
+  $('#status-txt').textContent = !r.copia ? 'Fale com a gente no Direct @arenakanoa para combinar o pagamento.' : manual ? 'Depois de pagar, a Arena confere e confirma sua reserva. Pode fechar esta página: ela fica salva neste celular.' : 'Aguardando pagamento…';
   $('#resumo-pix').innerHTML = resumoReserva(r);
   $('#btn-simular').hidden = !st.cfg.modoTeste;
   window.scrollTo({ top: 0 });

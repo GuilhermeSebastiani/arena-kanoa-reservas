@@ -9,8 +9,7 @@ const { open } = require('./db');
 
 const PORT = Number(process.env.PORT || 3000);
 const BASE_URL = (process.env.BASE_URL || '').replace(/\/$/, '');
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
-const SESSION_SECRET = process.env.SESSION_SECRET || ADMIN_PASSWORD || 'dev';
+const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
 const EXPORT_TOKEN = process.env.EXPORT_TOKEN || '';
 const SITE_ORIGIN = process.env.SITE_ORIGIN || 'https://arenakanoa.com.br';
 
@@ -161,7 +160,8 @@ async function criarReservaSite(body, ip) {
       r = { ...r, espaco, quadras: 0, valor, valor_pix: L.round2(valor * (Number(c.sinalEventoPct) || 100) / 100) };
     }
 
-    const expira = new Date(Date.now() + c.holdMin * 60e3);
+    const hold = mp.modo() === 'manual' ? (Number(c.holdManualMin) || 180) : c.holdMin;
+    const expira = new Date(Date.now() + hold * 60e3);
     r.expira_em = expira.toISOString();
     const [y, m, d] = data.split('-');
     const desc = tipo === 'quadra'
@@ -191,17 +191,41 @@ async function criarReservaSite(body, ip) {
 
 // ---------- admin ----------
 function assinar(v) { return crypto.createHmac('sha256', SESSION_SECRET).update(v).digest('hex'); }
-function cookieAdmin() {
-  const ts = String(Date.now());
-  return `${ts}.${assinar(ts)}`;
+function cookieSessao(uidUsuario) {
+  const v = `${uidUsuario}.${Date.now()}`;
+  return `${v}.${assinar(v)}`;
 }
-function ehAdmin(req) {
+async function usuarioDaSessao(req) {
   const m = /(?:^|;\s*)adm=([^;]+)/.exec(req.headers.cookie || '');
-  if (!m || !ADMIN_PASSWORD) return false;
-  const [ts, sig] = decodeURIComponent(m[1]).split('.');
-  if (!ts || !sig || sig.length !== 64) return false;
-  const ok = crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(assinar(ts)));
-  return ok && Date.now() - Number(ts) < 30 * 864e5;
+  if (!m) return null;
+  const partes = decodeURIComponent(m[1]).split('.');
+  if (partes.length !== 3 || partes[2].length !== 64) return null;
+  const [id, ts, sig] = partes;
+  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(assinar(`${id}.${ts}`)))) return null;
+  if (Date.now() - Number(ts) > 30 * 864e5) return null;
+  return (await db.get('SELECT id, login, nome FROM usuarios WHERE id = $1', [id])) || null;
+}
+
+// senhas com scrypt
+function hashSenha(senha) {
+  const sal = crypto.randomBytes(16).toString('hex');
+  return `${sal}:${crypto.scryptSync(senha, sal, 64).toString('hex')}`;
+}
+function confereSenha(senha, hash) {
+  const [sal, h] = String(hash).split(':');
+  if (!sal || !h) return false;
+  const calc = crypto.scryptSync(String(senha), sal, 64);
+  return crypto.timingSafeEqual(calc, Buffer.from(h, 'hex'));
+}
+const normLogin = (l) => String(l || '').trim().toLowerCase();
+async function criarUsuario(login, nome, senha) {
+  login = normLogin(login);
+  if (!/^[a-z0-9._-]{3,30}$/.test(login)) throw Object.assign(new Error('Usuário: 3 a 30 letras/números, sem espaço nem acento.'), { status: 400 });
+  if (String(senha || '').length < 8) throw Object.assign(new Error('A senha precisa ter pelo menos 8 caracteres.'), { status: 400 });
+  if (await db.get('SELECT id FROM usuarios WHERE login = $1', [login])) throw Object.assign(new Error('Esse usuário já existe.'), { status: 409 });
+  const u = { id: uid(), login, nome: String(nome || login).slice(0, 60) };
+  await db.run('INSERT INTO usuarios (id, login, nome, hash, criado) VALUES ($1,$2,$3,$4,$5)', [u.id, u.login, u.nome, hashSenha(senha), agoraISO()]);
+  return u;
 }
 
 async function criarReservaAdmin(b) {
@@ -259,8 +283,9 @@ async function rotear(req, res) {
     const c = await cfg();
     return send(res, 200, {
       valorHora: c.valorHora, totalQuadras: c.totalQuadras, duracoes: c.duracoes, abre: c.abre, fecha: c.fecha,
-      holdMin: c.holdMin, sinalEventoPct: c.sinalEventoPct, diasAntecedencia: c.diasAntecedencia, hoje: L.agoraLocal().data,
+      holdMin: mp.modo() === 'manual' ? (Number(c.holdManualMin) || 180) : c.holdMin, sinalEventoPct: c.sinalEventoPct, diasAntecedencia: c.diasAntecedencia, hoje: L.agoraLocal().data,
       modoTeste: mp.modoTeste(),
+      modo: mp.modo(),
     });
   }
   if (M === 'GET' && p === '/api/mes') {
@@ -346,16 +371,36 @@ async function rotear(req, res) {
   if (M === 'POST' && p === '/admin/login') {
     const b = await lerJSON(req);
     if (limitado(`login:${ipDe(req)}`, 10, 900e3)) return erro(res, 429, 'Muitas tentativas. Aguarde 15 minutos.');
-    const ok = ADMIN_PASSWORD && typeof b.senha === 'string' && b.senha.length === ADMIN_PASSWORD.length &&
-      crypto.timingSafeEqual(Buffer.from(b.senha), Buffer.from(ADMIN_PASSWORD));
-    if (!ok) return erro(res, 401, 'Senha incorreta.');
+    const u = await db.get('SELECT * FROM usuarios WHERE login = $1', [normLogin(b.usuario)]);
+    if (!u || !confereSenha(b.senha || '', u.hash)) return erro(res, 401, 'Usuário ou senha incorretos.');
     const seguro = (req.headers['x-forwarded-proto'] || '') === 'https' ? '; Secure' : '';
-    return send(res, 200, { ok: true }, { 'Set-Cookie': `adm=${encodeURIComponent(cookieAdmin())}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${30 * 86400}${seguro}` });
+    return send(res, 200, { ok: true, nome: u.nome }, { 'Set-Cookie': `adm=${encodeURIComponent(cookieSessao(u.id))}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${30 * 86400}${seguro}` });
   }
   if (M === 'POST' && p === '/admin/logout') return send(res, 200, { ok: true }, { 'Set-Cookie': 'adm=; Path=/; Max-Age=0' });
 
   if (p.startsWith('/admin/api/')) {
-    if (!ehAdmin(req)) return erro(res, 401, 'Faça login.');
+    const eu = await usuarioDaSessao(req);
+    if (!eu) return erro(res, 401, 'Faça login.');
+    if (M === 'GET' && p === '/admin/api/eu') return send(res, 200, { ...eu, modo: mp.modo() });
+    if (M === 'GET' && p === '/admin/api/usuarios') return send(res, 200, await db.all('SELECT id, login, nome, criado FROM usuarios ORDER BY criado'));
+    if (M === 'POST' && p === '/admin/api/usuarios') {
+      const b = await lerJSON(req);
+      return send(res, 201, await criarUsuario(b.login, b.nome, b.senha));
+    }
+    m = /^\/admin\/api\/usuarios\/([\w-]{36})$/.exec(p);
+    if (M === 'DELETE' && m) {
+      if (m[1] === eu.id) return erro(res, 400, 'Você não pode remover o seu próprio usuário.');
+      await db.run('DELETE FROM usuarios WHERE id = $1', [m[1]]);
+      return send(res, 200, { ok: true });
+    }
+    if (M === 'POST' && p === '/admin/api/senha') {
+      const b = await lerJSON(req);
+      const u = await db.get('SELECT * FROM usuarios WHERE id = $1', [eu.id]);
+      if (!confereSenha(b.atual || '', u.hash)) return erro(res, 400, 'Senha atual incorreta.');
+      if (String(b.nova || '').length < 8) return erro(res, 400, 'A senha nova precisa ter pelo menos 8 caracteres.');
+      await db.run('UPDATE usuarios SET hash = $1 WHERE id = $2', [hashSenha(b.nova), eu.id]);
+      return send(res, 200, { ok: true });
+    }
     const c = await cfg();
     if (M === 'GET' && p === '/admin/api/reservas') {
       const de = q.de || L.agoraLocal().data;
@@ -410,7 +455,13 @@ async function main() {
     for (const s of seed) await criarReservaAdmin(s);
     console.log(`[seed] ${seed.length} reservas importadas`);
   }
-  console.log(`[db] ${db.kind}${mp.modoTeste() ? ' | Mercado Pago em MODO TESTE (sem MP_ACCESS_TOKEN)' : ''}`);
+  // primeiro usuário vem das variáveis ADMIN_USER / ADMIN_PASSWORD (só se ainda não houver nenhum)
+  const nUsu = await db.get('SELECT COUNT(*) AS n FROM usuarios');
+  if (Number(nUsu.n) === 0 && process.env.ADMIN_USER && process.env.ADMIN_PASSWORD) {
+    await criarUsuario(process.env.ADMIN_USER, process.env.ADMIN_USER, process.env.ADMIN_PASSWORD);
+    console.log(`[usuarios] primeiro usuário criado: ${normLogin(process.env.ADMIN_USER)}`);
+  }
+  console.log(`[db] ${db.kind} | pagamento: ${mp.modo()}`);
   http.createServer(async (req, res) => {
     try { await rotear(req, res); } catch (e) {
       const status = e.status || 500;

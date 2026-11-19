@@ -64,20 +64,22 @@ textarea{min-height:120px;font:13px ui-monospace,Menlo,monospace}
 <div id="tela-login" class="login wrap" hidden>
   <img src="/logo.png" alt="">
   <h2>Painel de reservas</h2>
-  <form id="f-login"><input type="password" id="senha" placeholder="Senha" autocomplete="current-password"><button class="btn" style="width:100%">Entrar</button></form>
+  <form id="f-login"><input id="usuario" placeholder="Usuário" autocomplete="username" autocapitalize="none" style="margin-bottom:8px"><input type="password" id="senha" placeholder="Senha" autocomplete="current-password"><button class="btn" style="width:100%">Entrar</button></form>
   <div class="msg err" id="login-erro"></div>
 </div>
 
 <div id="app" hidden>
-<header><div class="wrap"><img src="/logo.png" alt=""><b>Reservas</b><button id="sair">Sair</button></div></header>
+<header><div class="wrap"><img src="/logo.png" alt=""><b>Reservas</b><span id="eu-nome" style="margin-left:auto;font-size:14px;opacity:.8"></span><button id="sair" style="margin-left:10px">Sair</button></div></header>
 <div class="wrap">
   <nav>
     <button data-aba="agenda" aria-pressed="true">Agenda</button>
     <button data-aba="cal">Calendário</button>
     <button data-aba="nova">Nova reserva</button>
     <button data-aba="config">Configurações</button>
+    <button data-aba="usu">Usuários</button>
   </nav>
-  <div id="aviso-teste" class="teste" hidden>Mercado Pago em modo de teste (falta configurar o token). Os PIX não são reais.</div>
+  <div id="aviso-teste" class="teste" hidden>Modo de teste: os PIX não são reais.</div>
+  <div id="aviso-manual" class="teste" hidden>PIX manual: o cliente paga na chave da Arena. Confira o extrato e clique em <b>Marcar pago</b>. Reserva que passou do prazo sem pagamento aparece como <i>expirada</i> e libera o horário.</div>
 
   <section id="aba-agenda">
     <div class="resumo" id="resumo"></div>
@@ -154,6 +156,31 @@ textarea{min-height:120px;font:13px ui-monospace,Menlo,monospace}
       </form>
     </div>
   </section>
+
+  <section id="aba-usu" hidden>
+    <div class="card"><h2 style="margin-top:0">Quem acessa o painel</h2><div id="usu-lista"></div></div>
+    <div class="card">
+      <h2 style="margin-top:0">Novo usuário</h2>
+      <form id="f-usu">
+        <div class="grid2">
+          <div><label>Nome</label><input id="u-nome" placeholder="Jussara"></div>
+          <div><label>Usuário (para entrar)</label><input id="u-login" placeholder="jussara" autocapitalize="none"></div>
+        </div>
+        <label>Senha inicial (mínimo 8 caracteres)</label><input id="u-senha" type="text" autocomplete="off">
+        <button class="btn">Criar usuário</button><div class="msg" id="u-msg"></div>
+      </form>
+    </div>
+    <div class="card">
+      <h2 style="margin-top:0">Trocar minha senha</h2>
+      <form id="f-senha">
+        <div class="grid2">
+          <div><label>Senha atual</label><input id="s-atual" type="password" autocomplete="current-password"></div>
+          <div><label>Senha nova</label><input id="s-nova" type="password" autocomplete="new-password"></div>
+        </div>
+        <button class="btn">Trocar senha</button><div class="msg" id="s-msg"></div>
+      </form>
+    </div>
+  </section>
 </div>
 </div>
 
@@ -173,25 +200,26 @@ async function api(url, opts = {}) {
   if (!r.ok) throw new Error(j.erro || 'Falha');
   return j;
 }
-function mostrarLogin() { $('#app').hidden = true; $('#tela-login').hidden = false; $('#senha').focus(); }
+function mostrarLogin() { $('#app').hidden = true; $('#tela-login').hidden = false; $('#usuario').focus(); }
 $('#f-login').onsubmit = async (e) => {
   e.preventDefault();
-  try { await api('/admin/login', { method: 'POST', body: JSON.stringify({ senha: $('#senha').value }) }); $('#senha').value = ''; abrir(); }
+  try { await api('/admin/login', { method: 'POST', body: JSON.stringify({ usuario: $('#usuario').value, senha: $('#senha').value }) }); $('#senha').value = ''; abrir(); }
   catch (er) { $('#login-erro').textContent = er.message; }
 };
 $('#sair').onclick = async () => { await fetch('/admin/logout', { method: 'POST' }); mostrarLogin(); };
 
 document.querySelectorAll('nav button').forEach((b) => b.onclick = () => {
   document.querySelectorAll('nav button').forEach((x) => x.setAttribute('aria-pressed', x === b));
-  ['agenda','cal','nova','config'].forEach((a) => $(`#aba-${a}`).hidden = a !== b.dataset.aba);
+  ['agenda','cal','nova','config','usu'].forEach((a) => $(`#aba-${a}`).hidden = a !== b.dataset.aba);
   if (b.dataset.aba === 'agenda') carregarAgenda();
   if (b.dataset.aba === 'cal') carregarCal();
   if (b.dataset.aba === 'config') carregarCfg();
+  if (b.dataset.aba === 'usu') carregarUsu();
 });
 
 async function abrir() {
   $('#tela-login').hidden = true;
-  try { await carregarAgenda(); $('#app').hidden = false; } catch (e) { if (e.message !== 'login') alert(e.message); }
+  try { const eu = await api('/admin/api/eu'); $('#eu-nome').textContent = eu.nome; $('#aviso-manual').hidden = eu.modo !== 'manual'; await carregarAgenda(); $('#app').hidden = false; } catch (e) { if (e.message !== 'login') alert(e.message); }
 }
 
 // ---------- agenda ----------
@@ -327,6 +355,30 @@ $('#f-cfg').onsubmit = async (e) => {
     await api('/admin/api/config', { method: 'PUT', body: JSON.stringify(body) });
     $('#c-msg').className = 'msg ok'; $('#c-msg').textContent = 'Configurações salvas.';
   } catch (er) { $('#c-msg').className = 'msg err'; $('#c-msg').textContent = er.message.includes('JSON') ? 'Os horários fixos têm um erro de formatação.' : er.message; }
+};
+
+// ---------- usuários ----------
+async function carregarUsu() {
+  const us = await api('/admin/api/usuarios');
+  $('#usu-lista').innerHTML = us.map((u) => `<div class="item"><div class="hora">${esc(u.login)}</div><div class="info"><b>${esc(u.nome)}</b><small>desde ${new Date(u.criado).toLocaleDateString('pt-BR')}</small></div><div class="acoes"><button class="b dan" data-rm="${u.id}">Remover</button></div></div>`).join('');
+  document.querySelectorAll('[data-rm]').forEach((b) => b.onclick = async () => {
+    if (!confirm('Remover este acesso?')) return;
+    try { await api(`/admin/api/usuarios/${b.dataset.rm}`, { method: 'DELETE' }); carregarUsu(); } catch (e) { alert(e.message); }
+  });
+}
+$('#f-usu').onsubmit = async (e) => {
+  e.preventDefault();
+  try {
+    await api('/admin/api/usuarios', { method: 'POST', body: JSON.stringify({ nome: $('#u-nome').value, login: $('#u-login').value, senha: $('#u-senha').value }) });
+    $('#u-msg').className = 'msg ok'; $('#u-msg').textContent = 'Usuário criado. Passe o usuário e a senha para a pessoa.'; $('#f-usu').reset(); carregarUsu();
+  } catch (er) { $('#u-msg').className = 'msg err'; $('#u-msg').textContent = er.message; }
+};
+$('#f-senha').onsubmit = async (e) => {
+  e.preventDefault();
+  try {
+    await api('/admin/api/senha', { method: 'POST', body: JSON.stringify({ atual: $('#s-atual').value, nova: $('#s-nova').value }) });
+    $('#s-msg').className = 'msg ok'; $('#s-msg').textContent = 'Senha trocada.'; $('#f-senha').reset();
+  } catch (er) { $('#s-msg').className = 'msg err'; $('#s-msg').textContent = er.message; }
 };
 
 abrir();

@@ -8,7 +8,8 @@ const DEFAULTS = {
   passoMin: 30,
   duracoes: [60, 90, 120, 150, 180],
   diasAntecedencia: 90,
-  holdMin: 30,              // minutos que o horário fica segurado aguardando o PIX
+  holdMin: 30,              // minutos que o horário fica segurado aguardando o PIX (Mercado Pago)
+  holdManualMin: 180,       // no PIX manual a Arena confirma olhando o extrato, então segura mais tempo
   salarioMinimo: 1621,
   precos: {
     arena: { semana: 1000, fimDeSemana: 'salarioMinimo' },

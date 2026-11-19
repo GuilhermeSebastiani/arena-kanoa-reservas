@@ -27,6 +27,13 @@ const SCHEMA = [
     criado TEXT NOT NULL
   )`,
   `CREATE INDEX IF NOT EXISTS reservas_data ON reservas (data)`,
+  `CREATE TABLE IF NOT EXISTS usuarios (
+    id TEXT PRIMARY KEY,
+    login TEXT UNIQUE NOT NULL,
+    nome TEXT,
+    hash TEXT NOT NULL,
+    criado TEXT NOT NULL
+  )`,
   `CREATE TABLE IF NOT EXISTS config (
     chave TEXT PRIMARY KEY,
     valor TEXT NOT NULL
