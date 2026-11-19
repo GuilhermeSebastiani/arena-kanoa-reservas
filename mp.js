@@ -1,7 +1,7 @@
 // Integração com o Mercado Pago (PIX). Sem MP_ACCESS_TOKEN roda em modo de teste com PIX simulado.
 const crypto = require('node:crypto');
 
-const TOKEN = () => process.env.MP_ACCESS_TOKEN || '';
+const TOKEN = () => { const t = (process.env.MP_ACCESS_TOKEN || '').trim(); return t.length > 10 ? t : ''; };
 const API = 'https://api.mercadopago.com';
 // modo: 'mp' (Mercado Pago com confirmação automática), 'manual' (PIX na chave da Arena, confirmado no painel)
 // ou 'teste' (só local ou com MODO_TESTE=1: PIX simulado)
@@ -87,7 +87,7 @@ async function consultar(paymentId) {
 
 // Valida o cabeçalho x-signature do webhook (quando MP_WEBHOOK_SECRET está configurado)
 function assinaturaValida(headers, dataId) {
-  const secret = process.env.MP_WEBHOOK_SECRET;
+  const secret = (process.env.MP_WEBHOOK_SECRET || '').trim().length > 10 ? process.env.MP_WEBHOOK_SECRET.trim() : '';
   if (!secret) return true;
   const sig = headers['x-signature'] || '';
   const reqId = headers['x-request-id'] || '';
