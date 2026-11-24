@@ -8,7 +8,7 @@ const API = 'https://api.mercadopago.com';
 function modo() {
   if (process.env.MODO_PAGAMENTO) return process.env.MODO_PAGAMENTO;
   if (TOKEN()) return 'mp';
-  if (process.env.MODO_TESTE === '1' || !process.env.DATABASE_URL) return 'teste';
+  if (process.env.MODO_TESTE === '1' || (!process.env.DATABASE_URL && !process.env.SQLITE_FILE)) return 'teste';
   return 'manual';
 }
 const modoTeste = () => modo() === 'teste';

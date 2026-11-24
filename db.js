@@ -40,7 +40,7 @@ const SCHEMA = [
   )`,
 ];
 
-// Copia os dados do banco antigo (MIGRAR_DE) para o novo, uma vez só: tabela por tabela, apenas se a nova estiver vazia.
+// Copia os dados do banco Postgres antigo (MIGRAR_DE) para o arquivo no disco, uma vez só: tabela por tabela, apenas se a nova estiver vazia.
 async function migrar(db, url, Pool) {
   const ssl = /localhost|127\.0\.0\.1/.test(url) ? false : { rejectUnauthorized: false };
   const velho = new Pool({ connectionString: url, ssl });
@@ -62,19 +62,11 @@ async function migrar(db, url, Pool) {
 }
 
 async function open() {
-  if (process.env.DATABASE_URL) {
+  // SQLITE_FILE (disco do Render) tem prioridade sobre o Postgres
+  if (process.env.DATABASE_URL && !process.env.SQLITE_FILE) {
     const { Pool } = require('pg');
     const ssl = /localhost|127\.0\.0\.1/.test(process.env.DATABASE_URL) ? false : { rejectUnauthorized: false };
-    // DB_SCHEMA: permite dividir um banco pago com outro sistema (ex.: Agro Sebastiani), cada um no seu espaço
-    const schema = (process.env.DB_SCHEMA || '').trim();
-    if (schema && !/^[a-z_][a-z0-9_]*$/.test(schema)) throw new Error('DB_SCHEMA inválido: use letras minúsculas, números e _');
-    if (schema) {
-      const p0 = new Pool({ connectionString: process.env.DATABASE_URL, ssl });
-      await p0.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
-      await p0.end();
-    }
     const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl });
-    if (schema) pool.on('connect', (c) => { c.query(`SET search_path TO ${schema}`).catch(() => {}); });
     const db = {
       kind: 'pg',
       async all(sql, params = []) { return (await pool.query(sql, params)).rows; },
@@ -83,7 +75,6 @@ async function open() {
     };
     for (const s of SCHEMA) await db.run(s);
     await db.run('ALTER TABLE reservas ADD COLUMN IF NOT EXISTS quadras_num TEXT');
-    if ((process.env.MIGRAR_DE || '').trim()) await migrar(db, process.env.MIGRAR_DE.trim(), Pool);
     return db;
   }
   const { DatabaseSync } = require('node:sqlite');
@@ -98,6 +89,8 @@ async function open() {
   };
   for (const q of SCHEMA) s.exec(q);
   try { s.exec('ALTER TABLE reservas ADD COLUMN quadras_num TEXT'); } catch {}
+  // mudança do Postgres para o disco: copia os dados do banco antigo uma vez só
+  if ((process.env.MIGRAR_DE || '').trim()) await migrar(db, process.env.MIGRAR_DE.trim(), require('pg').Pool);
   return db;
 }
 

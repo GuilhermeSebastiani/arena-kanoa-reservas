@@ -410,6 +410,10 @@ async function rotear(req, res) {
     const eu = await usuarioDaSessao(req);
     if (!eu) return erro(res, 401, 'Faça login.');
     if (M === 'GET' && p === '/admin/api/eu') return send(res, 200, { ...eu, modo: mp.modo() });
+    if (M === 'GET' && p === '/admin/api/backup') {
+      const dados = { gerado: agoraISO(), reservas: await db.all('SELECT * FROM reservas ORDER BY data, inicio'), usuarios: await db.all('SELECT * FROM usuarios'), config: await db.all('SELECT * FROM config') };
+      return send(res, 200, dados, { 'Content-Disposition': `attachment; filename="arena-kanoa-backup-${agoraISO().slice(0, 10)}.json"` });
+    }
     if (M === 'GET' && p === '/admin/api/usuarios') return send(res, 200, await db.all('SELECT id, login, nome, criado FROM usuarios ORDER BY criado'));
     if (M === 'POST' && p === '/admin/api/usuarios') {
       const b = await lerJSON(req);

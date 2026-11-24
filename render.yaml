@@ -3,17 +3,25 @@ services:
     name: arena-kanoa-reservas
     runtime: node
     region: virginia
-    plan: free
+    plan: starter
     buildCommand: npm install
     startCommand: node server.js
     healthCheckPath: /saude
+    disk:
+      name: dados
+      mountPath: /var/data
+      sizeGB: 1
     domains:
       - reservas.arenakanoa.com.br
     envVars:
       - key: NODE_VERSION
         value: "22"
-      - key: DATABASE_URL
-        sync: false   # aponta para o banco dividido com a Agro Sebastiani (definido no painel, junto com DB_SCHEMA=arena)
+      - key: SQLITE_FILE
+        value: /var/data/arena.db
+      - key: MIGRAR_DE   # só na mudança: copia os dados do Postgres antigo para o disco; depois sai daqui
+        fromDatabase:
+          name: arena-kanoa-db
+          property: connectionString
       - key: BASE_URL
         value: https://reservas.arenakanoa.com.br
       - key: SITE_ORIGIN

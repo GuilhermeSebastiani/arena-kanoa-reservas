@@ -7,6 +7,7 @@ Reserva de quadras e eventos com pagamento por PIX (Mercado Pago).
 - `/api/agenda` datas com evento (sem nomes), usada pelo site e pelo story semanal
 - `/api/export?token=EXPORT_TOKEN` exportação completa para o caixa da Arena
 - `/webhooks/mp` aviso de pagamento do Mercado Pago
+- `/admin/api/backup` cópia de segurança completa (painel, aba Usuários)
 
 ## Variáveis
 | Nome | Para quê |
@@ -18,7 +19,7 @@ Reserva de quadras e eventos com pagamento por PIX (Mercado Pago).
 | MP_WEBHOOK_SECRET | assinatura secreta do webhook do Mercado Pago |
 | BASE_URL | https://reservas.arenakanoa.com.br |
 | EXPORT_TOKEN, SESSION_SECRET | gerados pelo Render |
-| DB_SCHEMA | `arena`: usa um espaço próprio dentro de um banco dividido com a Agro Sebastiani |
-| MIGRAR_DE | só na mudança de banco: endereço do banco antigo. Copia reservas, usuários e config uma vez e pode ser removida depois |
+| SQLITE_FILE | `/var/data/arena.db`: banco em arquivo no disco do Render (tem prioridade sobre DATABASE_URL) |
+| MIGRAR_DE | só na mudança do Postgres para o disco: endereço do Postgres antigo. Copia reservas, usuários e config uma vez |
 
 Teste local sem dependências: `ADMIN_PASSWORD=x node server.js` (usa SQLite em memória e PIX simulado).
