@@ -18,5 +18,7 @@ Reserva de quadras e eventos com pagamento por PIX (Mercado Pago).
 | MP_WEBHOOK_SECRET | assinatura secreta do webhook do Mercado Pago |
 | BASE_URL | https://reservas.arenakanoa.com.br |
 | EXPORT_TOKEN, SESSION_SECRET | gerados pelo Render |
+| DB_SCHEMA | `arena`: usa um espaço próprio dentro de um banco dividido com a Agro Sebastiani |
+| MIGRAR_DE | só na mudança de banco: endereço do banco antigo. Copia reservas, usuários e config uma vez e pode ser removida depois |
 
 Teste local sem dependências: `ADMIN_PASSWORD=x node server.js` (usa SQLite em memória e PIX simulado).

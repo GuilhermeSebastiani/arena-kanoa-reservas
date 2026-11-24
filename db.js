@@ -40,11 +40,41 @@ const SCHEMA = [
   )`,
 ];
 
+// Copia os dados do banco antigo (MIGRAR_DE) para o novo, uma vez só: tabela por tabela, apenas se a nova estiver vazia.
+async function migrar(db, url, Pool) {
+  const ssl = /localhost|127\.0\.0\.1/.test(url) ? false : { rejectUnauthorized: false };
+  const velho = new Pool({ connectionString: url, ssl });
+  try {
+    for (const t of ['reservas', 'usuarios', 'config']) {
+      const n = await db.get(`SELECT COUNT(*) AS n FROM ${t}`);
+      if (Number(n.n) > 0) { console.log(`[migrar] ${t}: já tem dados, não copiei`); continue; }
+      const rows = (await velho.query(`SELECT * FROM ${t}`)).rows;
+      for (const r of rows) {
+        const cols = Object.keys(r);
+        await db.run(`INSERT INTO ${t} (${cols.join(', ')}) VALUES (${cols.map((_, i) => '$' + (i + 1)).join(', ')}) ON CONFLICT DO NOTHING`, cols.map((c) => r[c]));
+      }
+      console.log(`[migrar] ${t}: ${rows.length} copiados`);
+    }
+  } catch (e) {
+    console.error('[migrar] falhou, nada foi apagado do banco antigo:', e.message);
+    throw e;
+  } finally { await velho.end(); }
+}
+
 async function open() {
   if (process.env.DATABASE_URL) {
     const { Pool } = require('pg');
     const ssl = /localhost|127\.0\.0\.1/.test(process.env.DATABASE_URL) ? false : { rejectUnauthorized: false };
+    // DB_SCHEMA: permite dividir um banco pago com outro sistema (ex.: Agro Sebastiani), cada um no seu espaço
+    const schema = (process.env.DB_SCHEMA || '').trim();
+    if (schema && !/^[a-z_][a-z0-9_]*$/.test(schema)) throw new Error('DB_SCHEMA inválido: use letras minúsculas, números e _');
+    if (schema) {
+      const p0 = new Pool({ connectionString: process.env.DATABASE_URL, ssl });
+      await p0.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
+      await p0.end();
+    }
     const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl });
+    if (schema) pool.on('connect', (c) => { c.query(`SET search_path TO ${schema}`).catch(() => {}); });
     const db = {
       kind: 'pg',
       async all(sql, params = []) { return (await pool.query(sql, params)).rows; },
@@ -53,6 +83,7 @@ async function open() {
     };
     for (const s of SCHEMA) await db.run(s);
     await db.run('ALTER TABLE reservas ADD COLUMN IF NOT EXISTS quadras_num TEXT');
+    if ((process.env.MIGRAR_DE || '').trim()) await migrar(db, process.env.MIGRAR_DE.trim(), Pool);
     return db;
   }
   const { DatabaseSync } = require('node:sqlite');
