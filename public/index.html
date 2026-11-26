@@ -31,9 +31,16 @@ header p{margin:2px 0 0;color:var(--muted);font-size:14px}
 header .site{margin-left:auto;font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap}
 main{padding:22px 0 60px}
 h2{font:800 15px/1.2 var(--display);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:26px 0 10px}
-.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--sand);padding:6px;border-radius:999px}
-.tabs button{border:0;background:transparent;font:800 16px var(--display);text-transform:uppercase;padding:12px;border-radius:999px;color:var(--muted);cursor:pointer}
-.tabs button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.tabs-titulo{margin-top:4px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tabs button{border:2px solid var(--line);background:var(--white);border-radius:20px;padding:14px 10px 12px;cursor:pointer;color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:0 2px 8px #2B211612;transition:transform .1s,background .15s,border-color .15s;-webkit-tap-highlight-color:transparent}
+.tabs button:active{transform:scale(.97)}
+.tabs button svg{width:38px;height:38px}
+.tabs button b{font:900 21px var(--display);text-transform:uppercase;letter-spacing:.02em}
+.tabs button small{font:500 12.5px/1.25 var(--body);color:var(--muted);text-align:center}
+.tabs button[aria-pressed=true]{background:var(--sun);border-color:var(--sun);color:#fff;box-shadow:0 6px 18px #FF6A1355}
+.tabs button[aria-pressed=true] small{color:#FFE8D9}
+.tabs button[aria-pressed=false]{border-color:#CDB994}
 .card{background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:16px}
 .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .cal-head{gap:8px}
@@ -211,9 +218,16 @@ body.com-barra main{padding-bottom:110px}
   <div id="aviso-teste" class="teste" hidden>Modo de teste: os PIX gerados aqui não são cobrados.</div>
 
   <section id="passo-escolha">
+    <h2 class="tabs-titulo">O que você quer reservar?</h2>
     <div class="tabs" role="group" aria-label="Tipo de reserva">
-      <button type="button" data-tipo="quadra" aria-pressed="true">Quadra</button>
-      <button type="button" data-tipo="evento" aria-pressed="false">Evento</button>
+      <button type="button" data-tipo="quadra" aria-pressed="true">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="24" cy="24" r="18"/><path d="M24 6c-5 6-5 30 0 36M8 17c9 3 23 3 32 0M8 31c9-3 23-3 32 0"/></svg>
+        <b>Quadra</b><small>Beach tennis, vôlei e futevôlei</small>
+      </button>
+      <button type="button" data-tipo="evento" aria-pressed="false">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="19" cy="17" rx="9" ry="11"/><path d="M19 28l-2 3h4zM19 31c0 5 4 6 3 11"/><path d="M33 9v5M30.5 11.5h5M38 22l2 2M40 22l-2 2M31 30h0M36 36h0"/><circle cx="34" cy="30" r="1.2" fill="currentColor"/><circle cx="38" cy="38" r="1.2" fill="currentColor"/></svg>
+        <b>Evento</b><small>Festas e confraternizações</small>
+      </button>
     </div>
 
     <h2>1. Escolha o dia</h2>
