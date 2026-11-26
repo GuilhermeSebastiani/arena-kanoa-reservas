@@ -39,9 +39,9 @@ h2{font:800 15px/1.2 var(--display);text-transform:uppercase;letter-spacing:.06e
 .cal-head b{font:800 18px var(--display);text-transform:capitalize}
 .icon-btn{border:1px solid var(--line);background:var(--paper);width:40px;height:40px;border-radius:50%;font-size:18px;cursor:pointer;color:var(--ink)}
 .icon-btn:disabled{opacity:.35;cursor:default}
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
 .cal .dw{font-size:12px;font-weight:700;color:var(--muted);text-align:center;padding:4px 0}
-.cal button{aspect-ratio:1;border:1px solid transparent;border-radius:12px;background:var(--paper);font:600 15px var(--body);color:var(--ink);cursor:pointer;position:relative}
+.cal button{aspect-ratio:1;min-width:0;padding:0;border:1px solid transparent;border-radius:12px;background:var(--paper);font:600 15px var(--body);color:var(--ink);cursor:pointer;position:relative}
 .cal button.livre{background:#EAF3EC;border-color:#CFE5D5}
 .cal button.ocup{background:transparent;color:#B9AD99;text-decoration:line-through;cursor:not-allowed}
 .cal button.fora{background:transparent;color:#CFC4B1;cursor:default}
@@ -88,6 +88,50 @@ textarea{min-height:80px;resize:vertical}
 .teste{background:#FFF4D6;border:1px solid #F0D58A;color:#6B4E00;border-radius:12px;padding:10px 14px;font-size:14px;margin-bottom:14px}
 footer{text-align:center;color:var(--muted);font-size:13px;padding:30px 16px}
 [hidden]{display:none!important}
+/* escolha da quadra (cartões com fotos) */
+.quadras{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+.qcard{background:var(--white);border:2px solid var(--line);border-radius:var(--r);overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:border-color .15s,box-shadow .15s}
+.qcard[aria-checked=true]{border-color:var(--sun);box-shadow:0 0 0 3px #FF6A1333}
+.qcard[aria-disabled=true]{opacity:.5;cursor:not-allowed}
+.qfotos{display:flex;align-items:stretch;aspect-ratio:16/10;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;position:relative;background:var(--sand)}
+.qfotos::-webkit-scrollbar{display:none}
+.qfotos img{flex:0 0 100%;width:100%;height:100%;object-fit:cover;object-position:center 40%;scroll-snap-align:start;display:block}
+.qfoto-wrap{position:relative}
+.qbadge{position:absolute;right:10px;bottom:10px;background:#000a;color:#fff;font:600 12px var(--body);padding:4px 9px;border-radius:999px;pointer-events:none}
+.qcheck{position:absolute;left:10px;top:10px;width:30px;height:30px;border-radius:50%;background:var(--sun);color:#fff;display:none;align-items:center;justify-content:center;font:900 17px var(--body);box-shadow:0 2px 6px #0004}
+.qcard[aria-checked=true] .qcheck{display:flex}
+.qinfo{display:flex;align-items:center;gap:10px;padding:12px 14px}
+.qinfo b{font:900 20px/1.1 var(--display);text-transform:uppercase;display:block}
+.qinfo small{color:var(--muted);font-size:14px}
+.qinfo .qpreco{margin-left:auto;text-align:right;font:800 17px var(--display);white-space:nowrap}
+.qinfo .qpreco small{display:block;font:500 12px var(--body)}
+/* duração */
+.durs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.dur{border:2px solid var(--line);background:var(--white);border-radius:14px;padding:10px 4px;font:inherit;color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.dur b{display:block;font:900 20px var(--display)}
+.dur small{color:var(--muted);font-size:13px}
+.dur[aria-checked=true]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.dur[aria-checked=true] small{color:#E9DCC6}
+.dur:disabled{opacity:.4;cursor:not-allowed}
+/* horários */
+.periodo{font:700 13px var(--body);color:var(--muted);margin:14px 0 6px}
+.periodo:first-child{margin-top:0}
+.horas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.hbtn{height:48px;border:2px solid #CFE5D5;background:#EAF3EC;border-radius:12px;font:700 16px var(--body);color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.hbtn[aria-checked=true]{background:var(--sun);border-color:var(--sun);color:#fff}
+.dica{background:var(--sand);border-radius:12px;padding:12px 14px;font-size:15px}
+.dica button{border:0;background:none;color:var(--sea);font:700 15px var(--body);padding:0;cursor:pointer;text-decoration:underline}
+/* ocupação (só para consulta) */
+.ocup{margin-top:22px;background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+.ocup summary{font-weight:700;cursor:pointer;color:var(--sea)}
+.ocup .grade{margin-top:12px}
+/* barra fixa embaixo */
+.barra{position:fixed;left:0;right:0;bottom:0;background:var(--ink);color:var(--paper);padding:10px 0 calc(10px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px #0003;z-index:10}
+.barra-in{max-width:720px;margin:0 auto;padding:0 16px;display:flex;align-items:center;gap:12px}
+.barra-txt{font-size:14px;line-height:1.3;flex:1;min-width:0}
+.barra-txt b{font:900 18px var(--display);display:block}
+.barra-btn{border:0;background:var(--sun);color:#fff;font:900 16px var(--display);text-transform:uppercase;padding:14px 18px;border-radius:999px;cursor:pointer;white-space:nowrap}
+body.com-barra main{padding-bottom:110px}
 .grade{display:grid;grid-template-columns:52px 1fr 1fr;gap:3px 6px;font-size:13px}
 .grade .th{font:800 13px var(--display);text-transform:uppercase;text-align:center;color:var(--ink);padding-bottom:4px}
 .grade .h{color:var(--muted);font-weight:600;text-align:right;padding-right:2px;line-height:36px}
@@ -100,6 +144,7 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:30px 16px}
 .grade .c span{display:flex;align-items:center;justify-content:center}
 .grade .c span.x{background:#E9DCC6;border-color:#E9DCC6}
 .grade .c span.x::after{content:"✕";font:800 12px/1 var(--body);color:#9C8462}
+.grade .c span.meu{background:var(--sun);border-color:var(--sun)}
 .grade .c .sel{background:var(--sun)!important;border-color:var(--sun)!important;color:#fff!important}
 .grade-leg{display:flex;gap:14px;font-size:13px;color:var(--muted);margin-top:8px}
 .grade-leg i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px}
@@ -137,14 +182,24 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:30px 16px}
     </div>
 
     <div id="bloco-quadra" hidden>
-      <h2>Horários do dia</h2>
-      <div class="card"><p class="vazio" style="margin:0 0 10px;font-size:14px">Toque num horário livre para começar a sua reserva.</p><div class="grade" id="grade"></div><div class="grade-msg" id="grade-msg" hidden></div>
-        <div class="grade-leg"><span><i style="background:#EAF3EC;border:1px solid #CFE5D5"></i>Livre</span><span><i style="background:#E9DCC6;font:800 9px/12px var(--body);color:#9C8462;text-align:center;font-style:normal">✕</i>Reservado</span><span><i style="background:var(--sun)"></i>Sua reserva</span></div></div>
-      <h2>2. Quanto tempo e quantas quadras</h2>
-      <div class="chips" id="duracoes"></div>
-      <div class="chips" id="nquadras" style="margin-top:10px"></div>
-      <h2>3. Horário de início</h2>
-      <div class="chips" id="horarios"></div>
+      <h2>2. Qual quadra?</h2>
+      <div class="quadras" id="quadras" role="radiogroup" aria-label="Quadra"></div>
+
+      <div id="passo-dur" hidden>
+        <h2>3. Quanto tempo?</h2>
+        <div class="durs" id="duracoes" role="radiogroup" aria-label="Duração"></div>
+      </div>
+
+      <div id="passo-hora" hidden>
+        <h2>4. Que horas começa?</h2>
+        <div id="horarios"></div>
+      </div>
+
+      <details class="ocup">
+        <summary>Ver ocupação das quadras neste dia</summary>
+        <div class="grade" id="grade"></div>
+        <div class="grade-leg"><span><i style="background:#EAF3EC;border:1px solid #CFE5D5"></i>Livre</span><span><i style="background:#E9DCC6"></i>Reservado</span><span><i style="background:var(--sun)"></i>Sua escolha</span></div>
+      </details>
     </div>
 
     <div id="bloco-evento" hidden>
@@ -167,6 +222,13 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:30px 16px}
       <button class="btn" id="btn-pix" type="button">Gerar PIX</button>
     </div>
   </section>
+
+  <div class="barra" id="barra" hidden>
+    <div class="barra-in">
+      <div class="barra-txt" id="barra-txt"></div>
+      <button type="button" class="barra-btn" id="barra-btn">Continuar</button>
+    </div>
+  </div>
 
   <section id="passo-pix" hidden>
     <div class="card pix">
@@ -212,7 +274,14 @@ const fmtDur = (m) => m % 60 ? `${Math.floor(m/60)}h${m%60}` : `${m/60}h`;
 const fmtData = (d) => { const [y,m,dd] = d.split('-'); const w = new Date(`${d}T12:00:00`).toLocaleDateString('pt-BR',{weekday:'long'}); return `${w}, ${dd}/${m}/${y}`; };
 const somaMin = (hhmm, min) => { const [h,m] = hhmm.split(':').map(Number); const t = h*60+m+min; return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`; };
 
-const st = { quadraEscolhida: null, tipo: 'quadra', cfg: null, ano: 0, mes: 0, dias: [], data: null, dia: null, dur: 120, quadras: 1, inicio: null, espaco: null, reserva: null };
+// quadra: '1' | '2' | 'ambas' (escolhida pelo cliente); dur e inicio só existem depois que a pessoa escolhe
+const st = { tipo: 'quadra', cfg: null, ano: 0, mes: 0, dias: [], data: null, dia: null, quadra: null, dur: null, inicio: null, espaco: null, reserva: null };
+const QUADRAS = {
+  '1': { nome: 'Quadra 1', sub: 'Areia coberta', fotos: ['q1-1', 'q1-2', 'q1-3'], n: 1 },
+  '2': { nome: 'Quadra 2', sub: 'Areia coberta, ao lado do parquinho', fotos: ['q2-1', 'q2-2', 'q2-3'], n: 1 },
+  'ambas': { nome: 'As duas quadras', sub: 'Para grupo grande ou torneio', fotos: ['ambas-1'], n: 2 },
+};
+const courtsDe = (q) => q === 'ambas' ? [1, 2] : [Number(q)];
 const guarda = { get(){ try { return localStorage.getItem('arena_reserva'); } catch { return null; } }, set(v){ try { v ? localStorage.setItem('arena_reserva', v) : localStorage.removeItem('arena_reserva'); } catch {} } };
 
 async function api(url, opts) {
@@ -227,7 +296,6 @@ async function iniciar() {
   if (st.cfg.modoTeste) $('#aviso-teste').hidden = false;
   const [y, m] = st.cfg.hoje.split('-').map(Number);
   st.ano = y; st.mes = m;
-  if (st.cfg.duracoes.includes(120)) st.dur = 120; else st.dur = st.cfg.duracoes[0];
   const qp = new URLSearchParams(location.search);
   if (qp.get('tipo') === 'evento') { st.tipo = 'evento'; document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-pressed', x.dataset.tipo === 'evento')); }
   const qData = /^\d{4}-\d{2}-\d{2}$/.test(qp.get('data') || '') ? qp.get('data') : null;
@@ -286,12 +354,14 @@ async function escolherDia(data) {
   st.data = data; st.inicio = null; st.espaco = null;
   renderCal();
   await carregarDia();
-  (st.tipo === 'quadra' ? $('#bloco-quadra') : $('#bloco-evento')).scrollIntoView({ behavior: 'smooth', block: 'start' });
+  rolarPara(st.tipo === 'quadra' ? $('#bloco-quadra') : $('#bloco-evento'));
 }
 
 async function carregarDia() {
   if (!st.data) return renderDia();
-  st.dia = await api(`/api/dia?data=${st.data}&dur=${st.dur}&quadras=${st.quadras}`);
+  st.dia = await api(`/api/dia?data=${st.data}`);
+  // se o horário que estava escolhido não cabe mais neste dia, limpa
+  if (st.inicio && !(st.quadra && st.dur && inicios(st.quadra, st.dur).includes(st.inicio))) st.inicio = null;
   renderDia();
 }
 
@@ -299,19 +369,13 @@ function renderDia() {
   const temDia = !!(st.data && st.dia);
   $('#bloco-quadra').hidden = !(temDia && st.tipo === 'quadra');
   $('#bloco-evento').hidden = !(temDia && st.tipo === 'evento');
-  if (!temDia) { $('#bloco-dados').hidden = true; return; }
+  if (!temDia) { $('#bloco-dados').hidden = true; atualizaBarra(); return; }
   if (st.tipo === 'quadra') {
-    $('#duracoes').innerHTML = st.cfg.duracoes.map((m) => `<button type="button" class="chip" data-dur="${m}" aria-pressed="${m===st.dur}">${fmtDur(m)}</button>`).join('');
-    $('#nquadras').innerHTML = [1, 2].slice(0, st.cfg.totalQuadras).map((q) => `<button type="button" class="chip" data-q="${q}" aria-pressed="${q===st.quadras}">${q} quadra${q>1?'s':''}</button>`).join('');
-    document.querySelectorAll('#duracoes .chip').forEach((b) => b.onclick = () => { st.dur = Number(b.dataset.dur); st.inicio = null; carregarDia(); });
-    document.querySelectorAll('#nquadras .chip').forEach((b) => b.onclick = () => { st.quadras = Number(b.dataset.q); st.inicio = null; carregarDia(); });
+    renderQuadras();
+    renderDuracoes();
+    renderHorarios();
     renderGrade();
-    const hs = st.dia.quadra.horarios;
-    $('#horarios').innerHTML = hs.length
-      ? hs.map((h) => `<button type="button" class="chip hora" data-h="${h}" aria-pressed="${h===st.inicio}">${h}</button>`).join('')
-      : '<p class="vazio">Sem horário livre com essa combinação. Tente menos tempo, 1 quadra ou outro dia.</p>';
-    document.querySelectorAll('#horarios .chip').forEach((b) => b.onclick = () => { st.inicio = b.dataset.h; st.quadraEscolhida = null; $('#grade-msg').hidden = true; renderDia(); $('#bloco-dados').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
-    $('#titulo-dados').textContent = '4. Seus dados';
+    $('#titulo-dados').textContent = '5. Seus dados';
   } else {
     const nomes = { arena: ['Arena toda', 'Quadras, barracão, cozinha, quiosque e área verde'], quiosque: ['Quiosque', st.dia.fimDeSemana ? 'Espaço do quiosque' : 'Espaço do quiosque · a partir das 17h'] };
     $('#espacos').innerHTML = st.dia.eventos.map((e) => `
@@ -319,87 +383,161 @@ function renderDia() {
         <div><b>${nomes[e.espaco][0]}</b><small>${e.livre ? nomes[e.espaco][1] : 'Indisponível nesta data'}</small></div>
         <div class="preco">${brl(e.valor)}${e.sinal < e.valor ? `<small>sinal de ${brl(e.sinal)} no PIX</small>` : ''}</div>
       </button>`).join('');
-    document.querySelectorAll('.esp').forEach((b) => b.onclick = () => { st.espaco = b.dataset.esp; renderDia(); $('#bloco-dados').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    document.querySelectorAll('.esp').forEach((b) => b.onclick = () => { st.espaco = b.dataset.esp; renderDia(); });
     $('#titulo-dados').textContent = '3. Seus dados';
   }
   const pronto = st.tipo === 'quadra' ? !!st.inicio : !!st.espaco;
   $('#bloco-dados').hidden = !pronto;
   if (pronto) renderResumo();
+  atualizaBarra();
 }
 
-// qual quadra a reserva vai pegar: Quadra 1 sempre que estiver livre no horário todo
-function quadrasPrevistas() {
-  if (!st.inicio || !st.dia) return [];
-  if (st.quadras >= st.dia.totalQuadras) return Array.from({ length: st.dia.totalQuadras }, (_, k) => k + 1);
-  const ini = st.inicio, fim = somaMin(st.inicio, st.dur);
-  const linhas = st.dia.grade.filter((g) => g.hora >= ini && g.hora < fim);
-  const livre = (c) => linhas.length === st.dur / 30 && linhas.every((g) => !g[`q${c}`]);
-  if (st.quadraEscolhida && livre(st.quadraEscolhida)) return [st.quadraEscolhida];
-  for (let c = 1; c <= st.dia.totalQuadras; c++) if (livre(c)) return [c];
-  return [];
+// ---- regras de horário (iguais às do servidor: de 30 em 30 min, até o fechamento, 15 min de folga hoje)
+function agoraMin() {
+  const t = new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Campo_Grande', hour: '2-digit', minute: '2-digit', hour12: false });
+  const [h, m] = t.split(':').map(Number); return h * 60 + m;
 }
-const nomeQuadras = (arr) => arr.length > 1 ? `Quadras ${arr.join(' e ')}` : `Quadra ${arr[0]}`;
-function passou(hora) {
-  if (st.data !== st.cfg.hoje) return false;
-  const d = new Date(); const agora = d.toLocaleTimeString('pt-BR', { timeZone: 'America/Campo_Grande', hour: '2-digit', minute: '2-digit', hour12: false });
-  return hora <= agora;
+const toMin = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
+function passou(hora) { return st.data === st.cfg.hoje && toMin(hora) <= agoraMin() + 15; }
+// horários de início em que a(s) quadra(s) escolhida(s) ficam livres pelo tempo todo
+function inicios(quadra, dur) {
+  const g = st.dia.grade, cs = courtsDe(quadra), fecha = toMin(st.cfg.fecha), out = [];
+  for (let i = 0; i < g.length; i++) {
+    const ini = toMin(g[i].hora);
+    if (ini + dur > fecha || passou(g[i].hora)) continue;
+    const linhas = g.filter((x) => toMin(x.hora) >= ini && toMin(x.hora) < ini + dur);
+    if (linhas.length === dur / 30 && linhas.every((x) => cs.every((c) => !x[`q${c}`]))) out.push(g[i].hora);
+  }
+  return out;
 }
+const precoQ = (quadra, dur) => Math.round(QUADRAS[quadra].n * (dur / 60) * st.cfg.valorHora * 100) / 100;
+const menorDur = () => Math.min(...st.cfg.duracoes);
+
+function renderQuadras() {
+  const keys = ['1', '2', 'ambas'].filter((k) => courtsDe(k).every((c) => c <= st.dia.totalQuadras));
+  $('#quadras').innerHTML = keys.map((k) => {
+    const q = QUADRAS[k];
+    const livre = inicios(k, menorDur()).length > 0;
+    return `<div class="qcard" role="radio" tabindex="${livre ? 0 : -1}" data-q="${k}" aria-checked="${st.quadra === k}" aria-disabled="${!livre}">
+      <div class="qfoto-wrap">
+        <div class="qfotos">${q.fotos.map((f, i) => `<img src="/img/quadras/${f}.jpg" alt="${q.nome}, foto ${i + 1}" loading="${i ? 'lazy' : 'eager'}" width="900" height="675">`).join('')}</div>
+        ${q.fotos.length > 1 ? `<span class="qbadge">${q.fotos.length} fotos · deslize</span>` : ''}
+        <span class="qcheck">✓</span>
+      </div>
+      <div class="qinfo"><div><b>${q.nome}</b><small>${livre ? q.sub : 'Sem horário livre neste dia'}</small></div>
+        <div class="qpreco">${brl(q.n * st.cfg.valorHora)}<small>por hora</small></div></div>
+    </div>`;
+  }).join('');
+  document.querySelectorAll('.qcard').forEach((el) => {
+    const escolher = () => {
+      if (el.getAttribute('aria-disabled') === 'true') return;
+      const nova = el.dataset.q, mudou = nova !== st.quadra;
+      st.quadra = nova;
+      if (mudou && st.inicio && !(st.dur && inicios(nova, st.dur).includes(st.inicio))) st.inicio = null;
+      renderDia();
+      if (mudou && !st.dur) rolarPara($('#passo-dur'));
+    };
+    el.onclick = escolher;
+    el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); escolher(); } };
+  });
+}
+
+function renderDuracoes() {
+  $('#passo-dur').hidden = !st.quadra;
+  if (!st.quadra) return;
+  $('#duracoes').innerHTML = st.cfg.duracoes.map((m) => {
+    const ok = inicios(st.quadra, m).length > 0;
+    return `<button type="button" class="dur" role="radio" data-dur="${m}" aria-checked="${m === st.dur}" ${ok ? '' : 'disabled'}><b>${fmtDur(m)}</b><small>${ok ? brl(precoQ(st.quadra, m)) : 'sem horário'}</small></button>`;
+  }).join('');
+  document.querySelectorAll('#duracoes .dur').forEach((b) => b.onclick = () => {
+    const primeira = !st.dur;
+    st.dur = Number(b.dataset.dur);
+    if (st.inicio && !inicios(st.quadra, st.dur).includes(st.inicio)) st.inicio = null;
+    renderDia();
+    if (primeira) rolarPara($('#passo-hora'));
+  });
+}
+
+function renderHorarios() {
+  $('#passo-hora').hidden = !(st.quadra && st.dur);
+  if (!st.quadra || !st.dur) return;
+  const hs = inicios(st.quadra, st.dur);
+  if (!hs.length) {
+    const outra = ['1', '2'].find((k) => k !== st.quadra && QUADRAS[k] && inicios(k, st.dur).length);
+    $('#horarios').innerHTML = `<div class="dica">Não tem ${fmtDur(st.dur)} seguidas livres ${st.quadra === 'ambas' ? 'nas duas quadras' : 'na ' + QUADRAS[st.quadra].nome} neste dia.
+      ${outra ? `<br><button type="button" data-troca="${outra}">Ver horários da ${QUADRAS[outra].nome}</button>` : ' Tente menos tempo ou outro dia.'}</div>`;
+    const t = $('#horarios [data-troca]'); if (t) t.onclick = () => { st.quadra = t.dataset.troca; renderDia(); };
+    return;
+  }
+  const grupos = [['Manhã', (h) => h < '12:00'], ['Tarde', (h) => h >= '12:00' && h < '18:00'], ['Noite', (h) => h >= '18:00']];
+  $('#horarios').innerHTML = grupos.map(([nome, f]) => {
+    const lista = hs.filter(f); if (!lista.length) return '';
+    return `<div class="periodo">${nome}</div><div class="horas">${lista.map((h) => `<button type="button" class="hbtn" role="radio" data-h="${h}" aria-checked="${h === st.inicio}">${h}</button>`).join('')}</div>`;
+  }).join('');
+  document.querySelectorAll('#horarios .hbtn').forEach((b) => b.onclick = () => { st.inicio = b.dataset.h; renderDia(); });
+}
+
+// grade do dia só para consulta (não dá para tocar)
 function renderGrade() {
-  const g = st.dia.grade; const sel = quadrasPrevistas();
-  const fim = st.inicio ? somaMin(st.inicio, st.dur) : null;
+  const g = st.dia.grade;
+  const sel = st.inicio && st.dur ? courtsDe(st.quadra) : [];
+  const ini = st.inicio ? toMin(st.inicio) : -1, fim = st.inicio ? ini + st.dur : -1;
   let h = `<div></div>${Array.from({ length: st.dia.totalQuadras }, (_, k) => `<div class="th">Quadra ${k + 1}</div>`).join('')}`;
-  h += `<div></div>${Array.from({ length: st.dia.totalQuadras }, () => '<div class="c" style="font-size:11px;color:var(--muted);text-align:center"><div>:00</div><div>:30</div></div>').join('')}`;
   for (let k = 0; k < g.length; k += 2) {
     const a = g[k], b = g[k + 1] || null;
     h += `<div class="h">${a.hora.slice(0, 2)}h</div>`;
     for (let c = 1; c <= st.dia.totalQuadras; c++) {
       const cel = (x) => {
         if (!x) return '<span style="visibility:hidden"></span>';
-        const meu = st.inicio && sel.includes(c) && x.hora >= st.inicio && x.hora < fim;
-        if (meu) return `<button type="button" class="sel" data-h="${x.hora}" data-q="${c}" aria-label="Quadra ${c}, ${x.hora}, sua reserva">${x.hora === st.inicio ? x.hora : ''}</button>`;
-        if (x[`q${c}`]) return `<span class="x" aria-label="Quadra ${c}, ${x.hora}, reservado"></span>`;
+        const t = toMin(x.hora);
+        if (sel.includes(c) && t >= ini && t < fim) return '<span class="meu"></span>';
+        if (x[`q${c}`]) return '<span class="x"></span>';
         if (passou(x.hora)) return '<span class="passado"></span>';
-        return `<button type="button" data-h="${x.hora}" data-q="${c}" aria-label="Quadra ${c}, ${x.hora}, livre"></button>`;
+        return '<span></span>';
       };
       h += `<div class="c">${cel(a)}${cel(b)}</div>`;
     }
   }
   $('#grade').innerHTML = h;
-  document.querySelectorAll('#grade button[data-h]').forEach((bt) => bt.onclick = () => tocarGrade(bt.dataset.h, Number(bt.dataset.q)));
 }
-function cabe(hora, c) {
-  const fim = somaMin(hora, st.dur);
-  const linhas = st.dia.grade.filter((g) => g.hora >= hora && g.hora < fim);
-  return linhas.length === st.dur / 30 && linhas.every((g) => !g[`q${c}`]);
+
+function rolarPara(el) {
+  if (!el || el.hidden) return;
+  setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
 }
-function tocarGrade(hora, c) {
-  const msg = $('#grade-msg'); msg.hidden = true; msg.style.color = '';
-  if (st.quadras >= 2) {
-    if (!st.dia.quadra.horarios.includes(hora)) { msg.textContent = `As duas quadras não ficam livres por ${fmtDur(st.dur)} a partir das ${hora}.`; msg.hidden = false; return; }
-    st.quadraEscolhida = null;
-  } else if (cabe(hora, c)) st.quadraEscolhida = c;
-  else {
-    const outra = [1, 2].find((q) => q !== c && cabe(hora, q));
-    if (!outra) { msg.textContent = `Não cabem ${fmtDur(st.dur)} a partir das ${hora}. Escolha outro horário ou menos tempo.`; msg.hidden = false; return; }
-    st.quadraEscolhida = outra;
-    msg.textContent = `A Quadra ${c} não fica livre ${fmtDur(st.dur)} seguidas a partir das ${hora}, então separamos a Quadra ${outra}.`; msg.hidden = false; msg.style.color = 'var(--muted)';
+
+// barra fixa: aparece quando a pessoa já escolheu tudo e o formulário ainda não está na tela
+let dadosVisivel = false;
+function atualizaBarra() {
+  const pronto = st.tipo === 'quadra' ? !!(st.data && st.inicio) : !!(st.data && st.espaco);
+  const mostra = pronto && !dadosVisivel && !$('#passo-escolha').hidden;
+  $('#barra').hidden = !mostra;
+  document.body.classList.toggle('com-barra', mostra);
+  if (!pronto) return;
+  if (st.tipo === 'quadra') {
+    const [, m, d] = st.data.split('-');
+    const hh = (x) => x.endsWith(':00') ? `${Number(x.slice(0, 2))}h` : x.replace(':', 'h');
+    $('#barra-txt').innerHTML = `<b>${brl(precoQ(st.quadra, st.dur))}</b>${QUADRAS[st.quadra].nome} · ${d}/${m} · ${hh(st.inicio)}–${hh(somaMin(st.inicio, st.dur))}`;
+  } else {
+    const e = st.dia.eventos.find((x) => x.espaco === st.espaco);
+    const [, m, d] = st.data.split('-');
+    $('#barra-txt').innerHTML = `<b>${brl(e.valor)}</b>${st.espaco === 'arena' ? 'Arena toda' : 'Quiosque'} · ${d}/${m}`;
   }
-  st.inicio = hora;
-  renderDia();
-  $('#bloco-dados').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+$('#barra-btn').onclick = () => { $('#bloco-dados').scrollIntoView({ behavior: 'smooth', block: 'start' }); setTimeout(() => $('#nome').focus({ preventScroll: true }), 450); };
+if ('IntersectionObserver' in window) new IntersectionObserver((es) => { dadosVisivel = es[0].isIntersecting; atualizaBarra(); }, { threshold: 0.15 }).observe($('#bloco-dados'));
 
 function linhasResumo() {
   if (st.tipo === 'quadra') {
-    const v = st.dia.quadra.valor;
-    const qs = quadrasPrevistas();
-    return { html: `<div><b>${fmtData(st.data)}</b></div><div>${qs.length ? nomeQuadras(qs) : `${st.quadras} quadra${st.quadras>1?'s':''}`} · ${st.inicio} às ${somaMin(st.inicio, st.dur)} (${fmtDur(st.dur)})</div><div class="total">${brl(v)}</div>`, pix: v };
+    const v = precoQ(st.quadra, st.dur);
+    return { html: `<div><b>${fmtData(st.data)}</b></div><div>${QUADRAS[st.quadra].nome} · ${st.inicio} às ${somaMin(st.inicio, st.dur)} (${fmtDur(st.dur)})</div><div class="total">${brl(v)}</div>`, pix: v };
   }
   const e = st.dia.eventos.find((x) => x.espaco === st.espaco);
   const nome = st.espaco === 'arena' ? 'Arena toda' : 'Quiosque';
   const sinal = e.sinal < e.valor;
   return { html: `<div><b>${fmtData(st.data)}</b></div><div>Evento · ${nome}</div><div class="total">${brl(e.valor)}</div>${sinal ? `<div class="nota">Agora você paga o sinal de <b>${brl(e.sinal)}</b> para garantir a data. O restante (${brl(e.valor - e.sinal)}) é pago no dia do evento.</div>` : ''}`, pix: e.sinal };
 }
+const nomeQuadras = (arr) => arr.length > 1 ? `Quadras ${arr.join(' e ')}` : `Quadra ${arr[0]}`;
 function renderResumo() {
   const r = linhasResumo();
   $('#resumo').innerHTML = r.html + `<div class="nota">O horário fica segurado por ${st.cfg.holdMin} minutos enquanto você paga.</div>`;
@@ -410,7 +548,7 @@ $('#btn-pix').onclick = async () => {
   const btn = $('#btn-pix'); const err = $('#erro');
   err.hidden = true;
   const body = { tipo: st.tipo, data: st.data, nome: $('#nome').value.trim(), telefone: $('#tel').value.trim(), email: $('#email').value.trim() };
-  if (st.tipo === 'quadra') Object.assign(body, { dur: st.dur, quadras: st.quadras, inicio: st.inicio, quadra: st.quadras === 1 ? (quadrasPrevistas()[0] || null) : null });
+  if (st.tipo === 'quadra') Object.assign(body, { dur: st.dur, quadras: QUADRAS[st.quadra].n, inicio: st.inicio, quadra: st.quadra === 'ambas' ? null : Number(st.quadra) });
   else Object.assign(body, { espaco: st.espaco, obs: $('#obs').value.trim() });
   if (body.nome.length < 3) { err.textContent = 'Informe seu nome.'; err.hidden = false; return; }
   if (body.telefone.replace(/\D/g,'').length < 10) { err.textContent = 'Informe um telefone com DDD.'; err.hidden = false; return; }
@@ -422,7 +560,7 @@ $('#btn-pix').onclick = async () => {
   } catch (e) {
     err.textContent = e.message; err.hidden = false;
     btn.disabled = false; renderResumo();
-    if (/ocupado|disponível/.test(e.message)) { st.inicio = null; st.espaco = null; await carregarMes(); await carregarDia(); }
+    if (/ocupad|disponível/.test(e.message)) { st.inicio = null; st.espaco = null; await carregarMes(); await carregarDia(); }
   }
 };
 
@@ -437,7 +575,7 @@ let poll = null, tick = null;
 function mostrarPix(r) {
   st.reserva = r;
   ['#passo-escolha', '#passo-ok', '#passo-expirou'].forEach((s) => $(s).hidden = true);
-  $('#passo-pix').hidden = false;
+  $('#passo-pix').hidden = false; atualizaBarra();
   if (r.qr) { $('#qr').src = `data:image/png;base64,${r.qr}`; $('#qr').hidden = false; } else $('#qr').hidden = true;
   $('#qr-gerado').hidden = true; $('#qr-gerado').innerHTML = '';
   if (!r.qr && r.copia && window.QRCode) { try { new QRCode($('#qr-gerado'), { text: r.copia, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.M }); $('#qr-gerado').hidden = false; } catch {} }
@@ -480,17 +618,17 @@ $('#btn-simular').onclick = async () => {
 function mostrarOk(r) {
   clearInterval(poll); clearInterval(tick); guarda.set(null);
   ['#passo-escolha', '#passo-pix', '#passo-expirou'].forEach((s) => $(s).hidden = true);
-  $('#passo-ok').hidden = false;
+  $('#passo-ok').hidden = false; atualizaBarra();
   $('#resumo-ok').innerHTML = resumoReserva(r);
   window.scrollTo({ top: 0 });
 }
 function mostrarExpirou() {
   clearInterval(poll); clearInterval(tick); guarda.set(null);
   ['#passo-escolha', '#passo-pix', '#passo-ok'].forEach((s) => $(s).hidden = true);
-  $('#passo-expirou').hidden = false;
+  $('#passo-expirou').hidden = false; atualizaBarra();
 }
 async function novaReserva() {
-  st.reserva = null; st.inicio = null; st.espaco = null; st.data = null; st.dia = null;
+  st.reserva = null; st.inicio = null; st.espaco = null; st.data = null; st.dia = null; st.quadra = null; st.dur = null;
   ['#passo-pix', '#passo-ok', '#passo-expirou'].forEach((s) => $(s).hidden = true);
   $('#passo-escolha').hidden = false;
   $('#btn-pix').disabled = false;

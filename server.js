@@ -171,10 +171,11 @@ async function criarReservaSite(body, ip) {
       r = { ...r, inicio: body.inicio, fim: L.toHHMM(L.toMin(body.inicio) + dur), quadras, valor: L.precoQuadra(c, quadras, dur) };
       const ocDia = L.ocupacaoDoDia(c, data, doDia, agora);
       let qs = L.escolherQuadras(c, ocDia, L.toMin(r.inicio), L.toMin(r.fim), quadras);
-      // o cliente tocou numa quadra específica na grade: respeita se ela estiver livre
+      // o cliente escolheu uma quadra específica: reserva exatamente ela (ou avisa que foi ocupada)
       const pedida = Number(body.quadra);
       if (quadras === 1 && [1, 2].includes(pedida) && pedida <= c.totalQuadras) {
-        if (L.quadrasLivresLista(ocDia.ocup, L.toMin(r.inicio), L.toMin(r.fim)).includes(pedida)) qs = [pedida];
+        if (!L.quadrasLivresLista(ocDia.ocup, L.toMin(r.inicio), L.toMin(r.fim)).includes(pedida)) throw Object.assign(new Error(`A Quadra ${pedida} acabou de ser ocupada nesse horário. Escolha outro.`), { status: 409 });
+        qs = [pedida];
       }
       if (!qs) throw Object.assign(new Error('Esse horário acabou de ser ocupado. Escolha outro.'), { status: 409 });
       r.quadras_num = qs.join(',');
@@ -317,7 +318,7 @@ async function rotear(req, res) {
   if (M === 'GET' && (p === '/admin' || p === '/admin/')) return estatico(res, 'admin.html');
   if (M === 'GET' && /^\/[\w.-]+\.(png|jpg|svg|ico)$/.test(p)) return estatico(res, p.slice(1));
   // acervo de fotos/vídeos e campanhas (ex.: /midia/fotos/quadra1.jpg, /promo/arenakanoa_fimdeano_01.jpg)
-  if ((M === 'GET' || M === 'HEAD') && /^\/(midia|promo)(\/[\w-]+)?\/[\w.-]+\.(jpg|png|mp4|json)$/.test(p)) return estatico(res, p.slice(1), req);
+  if ((M === 'GET' || M === 'HEAD') && /^\/(midia|promo|img)(\/[\w-]+)?\/[\w.-]+\.(jpg|png|mp4|json)$/.test(p)) return estatico(res, p.slice(1), req);
   if (M === 'GET' && p === '/saude') return send(res, 200, { ok: true });
 
   // API pública
