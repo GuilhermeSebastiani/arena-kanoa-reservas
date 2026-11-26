@@ -28,7 +28,10 @@ header .wrap{display:flex;align-items:center;gap:14px;padding-top:14px;padding-b
 header img{width:56px;height:56px;object-fit:contain}
 header h1{font:900 22px/1.05 var(--display);margin:0;letter-spacing:-.01em;text-transform:uppercase}
 header p{margin:2px 0 0;color:var(--muted);font-size:14px}
-header .site{margin-left:auto;font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap}
+header .tit{flex:1;min-width:0}
+header .tit-linha{display:flex;align-items:center;gap:10px}
+header p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header .site{font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;border:1px solid #CDB994;background:rgba(255,255,255,.6);color:var(--sea);padding:5px 11px;border-radius:999px}
 main{padding:22px 0 60px}
 h2{font:800 15px/1.2 var(--display);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:26px 0 10px}
 .tabs-titulo{margin-top:4px}
@@ -210,8 +213,7 @@ body.com-barra main{padding-bottom:110px}
 <body>
 <header><div class="wrap">
   <img src="/logo.png" alt="Arena Kanoa">
-  <div><h1>Reservas</h1><p>Esportes e Eventos · Sete Quedas-MS</p></div>
-  <a class="site" href="https://arenakanoa.com.br">← Site</a>
+  <div class="tit"><div class="tit-linha"><h1>Reservas</h1><a class="site" href="https://arenakanoa.com.br">← Site</a></div><p>Esportes e Eventos · Sete Quedas-MS</p></div>
 </div></header>
 
 <main class="wrap">
