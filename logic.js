@@ -6,7 +6,7 @@ const DEFAULTS = {
   abre: '07:00',
   fecha: '23:00',
   passoMin: 30,
-  duracoes: [60, 90, 120, 150, 180],
+  duracoes: [60, 90, 120, 150, 180, 210, 240, 270, 300], // até 5h, de 30 em 30 min
   diasAntecedencia: 90,
   holdMin: 30,              // minutos que o horário fica segurado aguardando o PIX (Mercado Pago)
   holdManualMin: 180,       // no PIX manual a Arena confirma olhando o extrato, então segura mais tempo

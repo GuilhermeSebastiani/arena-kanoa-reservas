@@ -163,7 +163,8 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:30px 16px}
 @keyframes chama{0%,100%{box-shadow:0 0 0 0 #FF6A1300}50%{box-shadow:0 0 0 6px #FF6A1355}}
 .chama .chip{animation:chama .6s 2}
 /* tempo */
-.durs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.durs{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+@media (max-width:520px){.durs{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .dur{border:2px solid var(--line);background:var(--white);border-radius:12px;padding:8px 2px;font:inherit;color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent}
 .dur b{display:block;font:900 17px var(--display)}
 .dur small{color:var(--muted);font-size:11px}
@@ -437,7 +438,7 @@ function renderDia() {
   $('#bloco-evento').hidden = !(temDia && st.tipo === 'evento');
   if (!temDia) { $('#bloco-dados').hidden = true; atualizaBarra(); return; }
   if (st.tipo === 'quadra') {
-    $('#duracoes').innerHTML = st.cfg.duracoes.map((m) => `<button type="button" class="dur" data-dur="${m}" aria-pressed="${m === (st.inicio ? st.dur : st.durAtalho)}"><b>${fmtDur(m)}</b><small>${brl(preco(st.quadras, m))}</small></button>`).join('');
+    $('#duracoes').innerHTML = st.cfg.duracoes.filter((m) => m <= 180 || m % 60 === 0).map((m) => `<button type="button" class="dur" data-dur="${m}" aria-pressed="${m === (st.inicio ? st.dur : st.durAtalho)}"><b>${fmtDur(m)}</b><small>${brl(preco(st.quadras, m))}</small></button>`).join('');
     $('#nquadras').innerHTML = [1, 2].slice(0, st.cfg.totalQuadras).map((q) => `<button type="button" class="chip" data-q="${q}" aria-pressed="${q===st.quadras}">${q} quadra${q>1?'s':''}</button>`).join('');
     document.querySelectorAll('#duracoes .dur').forEach((b) => b.onclick = () => escolherDur(Number(b.dataset.dur)));
     document.querySelectorAll('#nquadras .chip').forEach((b) => b.onclick = () => { st.quadras = Number(b.dataset.q); if (st.inicio && !(st.dur ? livreEm(st.inicio, st.dur, st.quadraEscolhida || 1) : livreEm(st.inicio, menorDur(), st.quadraEscolhida || 1))) { st.inicio = null; st.dur = null; } if (st.quadras >= 2) st.quadraEscolhida = null; else if (!st.quadraEscolhida && st.inicio) st.quadraEscolhida = quadrasPrevistas()[0] || 1; $('#grade-msg').hidden = true; renderDia(); });

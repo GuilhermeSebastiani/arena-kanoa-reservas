@@ -79,7 +79,8 @@ const ipDe = (req) => (req.headers['x-forwarded-for'] || req.socket.remoteAddres
 async function cfg() {
   const row = await db.get('SELECT valor FROM config WHERE chave = $1', ['arena']);
   const salvo = row ? JSON.parse(row.valor) : {};
-  return { ...L.DEFAULTS, ...salvo, precos: { ...L.DEFAULTS.precos, ...(salvo.precos || {}) } };
+  // as durações vêm sempre do código (o painel não edita isso, mas salvava uma cópia antiga junto)
+  return { ...L.DEFAULTS, ...salvo, duracoes: L.DEFAULTS.duracoes, precos: { ...L.DEFAULTS.precos, ...(salvo.precos || {}) } };
 }
 async function salvarCfg(novo) {
   const json = JSON.stringify(novo);
