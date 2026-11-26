@@ -37,12 +37,26 @@ async function lerJSON(req) {
   try { return JSON.parse(raw); } catch { throw Object.assign(new Error('JSON inválido'), { status: 400 }); }
 }
 
-const MIME = { '.html': 'text/html; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.css': 'text/css', '.js': 'text/javascript', '.ico': 'image/x-icon' };
-function estatico(res, arquivo) {
+const MIME = { '.html': 'text/html; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.css': 'text/css', '.js': 'text/javascript', '.ico': 'image/x-icon', '.mp4': 'video/mp4', '.json': 'application/json; charset=utf-8' };
+function estatico(res, arquivo, req) {
   const p = path.join(__dirname, 'public', arquivo);
-  if (!p.startsWith(path.join(__dirname, 'public')) || !fs.existsSync(p)) return send(res, 404, 'Não encontrado');
+  if (!p.startsWith(path.join(__dirname, 'public')) || !fs.existsSync(p) || !fs.statSync(p).isFile()) return send(res, 404, 'Não encontrado');
   const ext = path.extname(p);
-  res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=86400' });
+  const tamanho = fs.statSync(p).size;
+  const cab = { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': ext === '.html' || ext === '.json' ? 'no-cache' : 'public, max-age=86400', 'Accept-Ranges': 'bytes' };
+  // vídeos: responde a pedidos parciais (Range) para o navegador conseguir avançar/tocar
+  const range = req && /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+  if (range && (range[1] || range[2])) {
+    let ini = range[1] ? Number(range[1]) : tamanho - Number(range[2]);
+    let fim = range[1] && range[2] ? Number(range[2]) : tamanho - 1;
+    ini = Math.max(0, ini); fim = Math.min(fim, tamanho - 1);
+    if (ini > fim) { res.writeHead(416, { 'Content-Range': `bytes */${tamanho}` }); return res.end(); }
+    res.writeHead(206, { ...cab, 'Content-Range': `bytes ${ini}-${fim}/${tamanho}`, 'Content-Length': fim - ini + 1 });
+    if (req.method === 'HEAD') return res.end();
+    return fs.createReadStream(p, { start: ini, end: fim }).pipe(res);
+  }
+  res.writeHead(200, { ...cab, 'Content-Length': tamanho });
+  if (req && req.method === 'HEAD') return res.end();
   fs.createReadStream(p).pipe(res);
 }
 
@@ -302,6 +316,8 @@ async function rotear(req, res) {
   if (M === 'GET' && (p === '/' || p === '/index.html')) return estatico(res, 'index.html');
   if (M === 'GET' && (p === '/admin' || p === '/admin/')) return estatico(res, 'admin.html');
   if (M === 'GET' && /^\/[\w.-]+\.(png|jpg|svg|ico)$/.test(p)) return estatico(res, p.slice(1));
+  // acervo de fotos/vídeos e campanhas (ex.: /midia/fotos/quadra1.jpg, /promo/arenakanoa_fimdeano_01.jpg)
+  if ((M === 'GET' || M === 'HEAD') && /^\/(midia|promo)(\/[\w-]+)?\/[\w.-]+\.(jpg|png|mp4|json)$/.test(p)) return estatico(res, p.slice(1), req);
   if (M === 'GET' && p === '/saude') return send(res, 200, { ok: true });
 
   // API pública
