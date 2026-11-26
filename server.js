@@ -318,7 +318,7 @@ async function rotear(req, res) {
   if (M === 'GET' && (p === '/admin' || p === '/admin/')) return estatico(res, 'admin.html');
   if (M === 'GET' && /^\/[\w.-]+\.(png|jpg|svg|ico)$/.test(p)) return estatico(res, p.slice(1));
   // acervo de fotos/vídeos e campanhas (ex.: /midia/fotos/quadra1.jpg, /promo/arenakanoa_fimdeano_01.jpg)
-  if ((M === 'GET' || M === 'HEAD') && /^\/(midia|promo|img)(\/[\w-]+)?\/[\w.-]+\.(jpg|png|mp4|json)$/.test(p)) return estatico(res, p.slice(1), req);
+  if ((M === 'GET' || M === 'HEAD') && /^\/(midia|promo|img)(\/[\w-]+){0,2}\/[\w.-]+\.(jpg|png|mp4|json)$/.test(p)) return estatico(res, p.slice(1), req);
   if (M === 'GET' && p === '/saude') return send(res, 200, { ok: true });
 
   // API pública
