@@ -106,11 +106,13 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:30px 16px}
 .qcorpo .c .x{background:rgba(252,224,221,.94);border-color:#F2A9A2}
 .qcorpo .c .x::after{content:"✕";font:900 19px/1 var(--body);color:#D62D20}
 .qcorpo .c .passado{background:rgba(243,238,228,.9);border-color:transparent}
-.qcorpo .c .sel{background:var(--sun);border-color:var(--sun);color:#fff}
+.qcorpo .c .sel{background:var(--sun);border-color:var(--sun);color:#fff;font-size:11px}
+.qcorpo .c .sel.ini-so{background:#FFB27F;border-color:var(--sun);box-shadow:0 0 0 2px var(--sun) inset}
+.barra-txt .pede{font-weight:600}
 .grade-msg{margin-top:10px;font-weight:600;color:var(--bad);font-size:14px}
 .grade-leg{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted);margin-top:10px}
 .grade-leg i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px}
-.dica-dur{background:#FFF4D6;border:1px solid #F0D58A;color:#6B4E00;border-radius:12px;padding:10px 14px;font-size:14px;font-weight:600;margin-bottom:12px}
+.dica-dur{background:#EAF3EC;border:1px solid #CFE5D5;color:#24563A;border-radius:12px;padding:10px 14px;font-size:14px;font-weight:600;margin-bottom:12px}
 @keyframes chama{0%,100%{box-shadow:0 0 0 0 #FF6A1300}50%{box-shadow:0 0 0 6px #FF6A1355}}
 .chama .chip{animation:chama .6s 2}
 /* tempo */
@@ -180,14 +182,14 @@ body.com-barra main{padding-bottom:110px}
     </div>
 
     <div id="bloco-quadra" hidden>
-      <h2>2. Quanto tempo?</h2>
+      <h2>2. Quanto tempo? <span style="text-transform:none;letter-spacing:0;font:500 13px var(--body)">(atalho, opcional)</span></h2>
       <div id="tempo">
         <div class="durs" id="duracoes"></div>
         <div class="chips" id="nquadras" style="margin-top:10px"></div>
       </div>
-      <h2>3. Toque no horário de início</h2>
+      <h2>3. Escolha o horário na tabela</h2>
       <div class="card">
-        <div class="dica-dur" id="dica-dur">Escolha primeiro quanto tempo vai jogar, ali em cima.</div>
+        <div class="dica-dur" id="dica-dur"></div>
         <div class="tabela" id="grade"></div>
         <div class="grade-msg" id="grade-msg" hidden></div>
         <div class="grade-leg"><span><i style="background:#EAF3EC;border:1px solid #CFE5D5"></i>Livre</span><span><i style="background:#FCE0DD;border:1px solid #F2A9A2;color:#D62D20;font:900 10px/11px var(--body);text-align:center;font-style:normal">✕</i>Reservado</span><span><i style="background:var(--sun)"></i>Sua reserva</span></div>
@@ -347,7 +349,7 @@ async function escolherDia(data) {
 async function carregarDia() {
   if (!st.data) return renderDia();
   st.dia = await api(`/api/dia?data=${st.data}`);
-  if (st.inicio && !(st.dur && cabeTodas(st.inicio))) st.inicio = null;
+  if (st.inicio && !(st.dur && livreEm(st.inicio, st.dur, st.quadraEscolhida || 1))) { st.inicio = null; st.dur = null; }
   renderDia();
 }
 
@@ -357,11 +359,11 @@ function renderDia() {
   $('#bloco-evento').hidden = !(temDia && st.tipo === 'evento');
   if (!temDia) { $('#bloco-dados').hidden = true; atualizaBarra(); return; }
   if (st.tipo === 'quadra') {
-    $('#duracoes').innerHTML = st.cfg.duracoes.map((m) => `<button type="button" class="dur" data-dur="${m}" aria-pressed="${m===st.dur}"><b>${fmtDur(m)}</b><small>${brl(preco(st.quadras, m))}</small></button>`).join('');
+    $('#duracoes').innerHTML = st.cfg.duracoes.map((m) => `<button type="button" class="dur" data-dur="${m}" aria-pressed="${m === (st.inicio ? st.dur : st.durAtalho)}"><b>${fmtDur(m)}</b><small>${brl(preco(st.quadras, m))}</small></button>`).join('');
     $('#nquadras').innerHTML = [1, 2].slice(0, st.cfg.totalQuadras).map((q) => `<button type="button" class="chip" data-q="${q}" aria-pressed="${q===st.quadras}">${q} quadra${q>1?'s':''}</button>`).join('');
-    document.querySelectorAll('#duracoes .dur').forEach((b) => b.onclick = () => { st.dur = Number(b.dataset.dur); if (st.inicio && !cabeTodas(st.inicio)) st.inicio = null; $('#grade-msg').hidden = true; renderDia(); });
-    document.querySelectorAll('#nquadras .chip').forEach((b) => b.onclick = () => { st.quadras = Number(b.dataset.q); st.quadraEscolhida = null; if (st.inicio && !cabeTodas(st.inicio)) st.inicio = null; $('#grade-msg').hidden = true; renderDia(); });
-    $('#dica-dur').hidden = !!st.dur;
+    document.querySelectorAll('#duracoes .dur').forEach((b) => b.onclick = () => escolherDur(Number(b.dataset.dur)));
+    document.querySelectorAll('#nquadras .chip').forEach((b) => b.onclick = () => { st.quadras = Number(b.dataset.q); if (st.inicio && !(st.dur ? livreEm(st.inicio, st.dur, st.quadraEscolhida || 1) : livreEm(st.inicio, menorDur(), st.quadraEscolhida || 1))) { st.inicio = null; st.dur = null; } if (st.quadras >= 2) st.quadraEscolhida = null; else if (!st.quadraEscolhida && st.inicio) st.quadraEscolhida = quadrasPrevistas()[0] || 1; $('#grade-msg').hidden = true; renderDia(); });
+    $('#dica-dur').innerHTML = !st.inicio ? 'Toque no horário em que você quer <b>começar</b>.' : !st.dur ? `Começa às <b>${st.inicio}</b>. Agora toque no horário em que <b>termina</b> (mínimo ${fmtDur(menorDur())}).` : 'Para mudar, toque em outro horário. Para aumentar ou diminuir, toque onde quer que termine.';
     renderGrade();
     $('#titulo-dados').textContent = '4. Seus dados';
   } else {
@@ -374,7 +376,7 @@ function renderDia() {
     document.querySelectorAll('.esp').forEach((b) => b.onclick = () => { st.espaco = b.dataset.esp; renderDia(); });
     $('#titulo-dados').textContent = '3. Seus dados';
   }
-  const pronto = st.tipo === 'quadra' ? !!st.inicio : !!st.espaco;
+  const pronto = st.tipo === 'quadra' ? !!(st.inicio && st.dur) : !!st.espaco;
   $('#bloco-dados').hidden = !pronto;
   if (pronto) renderResumo();
   atualizaBarra();
@@ -383,6 +385,7 @@ function renderDia() {
 // qual quadra a reserva vai pegar: Quadra 1 sempre que estiver livre no horário todo
 function quadrasPrevistas() {
   if (!st.inicio || !st.dia) return [];
+  if (!st.dur) return st.quadras >= st.dia.totalQuadras ? [1, 2] : [st.quadraEscolhida || 1];
   if (st.quadras >= st.dia.totalQuadras) return Array.from({ length: st.dia.totalQuadras }, (_, k) => k + 1);
   const ini = st.inicio, fim = somaMin(st.inicio, st.dur);
   const linhas = st.dia.grade.filter((g) => g.hora >= ini && g.hora < fim);
@@ -416,8 +419,9 @@ const cabeTodas = (hora) => st.quadras >= 2 ? [1, 2].every((c) => cabe(hora, c))
 const FOTOS = { 1: ['01', '02', '03', '04'], 2: ['01', '02', '03'] };
 const ICONE_FOTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 function renderGrade() {
-  const g = st.dia.grade; const sel = st.dur ? quadrasPrevistas() : [];
-  const fim = st.inicio ? somaMin(st.inicio, st.dur) : null;
+  const g = st.dia.grade; const sel = quadrasPrevistas();
+  const fim = st.inicio ? somaMin(st.inicio, st.dur || 30) : null;
+  const ultimo = st.inicio && st.dur ? somaMin(st.inicio, st.dur - 30) : null;
   let horas = '';
   for (let k = 0; k < g.length; k += 2) horas += `<div>${g[k].hora.slice(0, 2)}h</div>`;
   let h = `<div class="horas-col">${horas}</div>`;
@@ -427,7 +431,10 @@ function renderGrade() {
       const cel = (x) => {
         if (!x) return '<span style="visibility:hidden"></span>';
         const meu = st.inicio && sel.includes(c) && x.hora >= st.inicio && x.hora < fim;
-        if (meu) return `<button type="button" class="sel" data-h="${x.hora}" data-q="${c}" aria-label="Quadra ${c}, ${x.hora}, sua reserva">${x.hora === st.inicio ? x.hora : ''}</button>`;
+        if (meu) {
+          const txt = !st.dur ? x.hora : x.hora === st.inicio ? x.hora : x.hora === ultimo ? `até ${fim}` : '';
+          return `<button type="button" class="sel${st.dur ? '' : ' ini-so'}" data-h="${x.hora}" data-q="${c}" aria-label="Quadra ${c}, ${x.hora}, sua reserva">${txt}</button>`;
+        }
         if (x[`q${c}`]) return `<span class="x" aria-label="Quadra ${c}, ${x.hora}, reservado"></span>`;
         if (passou(x.hora)) return '<span class="passado"></span>';
         return `<button type="button" data-h="${x.hora}" data-q="${c}" aria-label="Quadra ${c}, ${x.hora}, livre"></button>`;
@@ -443,25 +450,54 @@ function renderGrade() {
   document.querySelectorAll('#grade button[data-h]').forEach((bt) => bt.onclick = () => tocarGrade(bt.dataset.h, Number(bt.dataset.q)));
   document.querySelectorAll('#grade .foto-btn').forEach((bt) => bt.onclick = () => abrirGaleria(Number(bt.dataset.fotos)));
 }
+const menorDur = () => Math.min(...st.cfg.duracoes);
+const maiorDur = () => Math.max(...st.cfg.duracoes);
+// cabe um intervalo [hora, hora+dur) na quadra c (ou nas duas, se for reserva de 2 quadras)
+function livreEm(hora, dur, c) {
+  const salva = st.dur; st.dur = dur;
+  const ok = st.quadras >= 2 ? [1, 2].every((q) => cabe(hora, q)) : cabe(hora, c);
+  st.dur = salva; return ok;
+}
+function aviso(txt, neutro) { const m = $('#grade-msg'); m.textContent = txt; m.style.color = neutro ? 'var(--muted)' : ''; m.hidden = !txt; }
+
+// toque na tabela: 1º toque = começo; toques seguintes = onde termina (inclui o quadradinho tocado)
 function tocarGrade(hora, c) {
-  const msg = $('#grade-msg'); msg.hidden = true; msg.style.color = '';
-  if (!st.dur) {
-    // ainda não escolheu o tempo: mostra onde escolher, sem marcar nada sozinho
-    $('#bloco-quadra').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    const t = $('#tempo'); t.classList.remove('chama'); void t.offsetWidth; t.classList.add('chama');
-    return;
+  aviso('');
+  const mesmaQuadra = st.quadras >= 2 || c === st.quadraEscolhida;
+  if (st.inicio && mesmaQuadra && hora === st.inicio) {
+    // tocar de novo no começo limpa a escolha
+    st.inicio = null; st.dur = null; renderDia(); return;
   }
-  if (st.quadras >= 2) {
-    if (![1, 2].every((q) => cabe(hora, q))) { msg.textContent = `As duas quadras não ficam livres por ${fmtDur(st.dur)} a partir das ${hora}.`; msg.hidden = false; return; }
-    st.quadraEscolhida = null;
-  } else if (cabe(hora, c)) st.quadraEscolhida = c;
+  if (st.inicio && mesmaQuadra && hora > st.inicio) {
+    let dur = toMin(hora) + 30 - toMin(st.inicio);
+    if (dur < menorDur()) { dur = menorDur(); aviso(`O mínimo é ${fmtDur(dur)}.`, true); }
+    if (dur > maiorDur()) { aviso(`O máximo pelo site é ${fmtDur(maiorDur())}. Para mais tempo, fale com a gente no Direct.`); return; }
+    if (!livreEm(st.inicio, dur, st.quadraEscolhida || c)) { aviso(`Tem horário reservado no meio. Escolha um fim antes dele.`); return; }
+    st.dur = dur; renderDia(); return;
+  }
+  // novo começo
+  if (passou(hora)) return;
+  st.inicio = hora; st.quadraEscolhida = st.quadras >= 2 ? null : c;
+  if (st.durAtalho && livreEm(hora, st.durAtalho, c)) st.dur = st.durAtalho;
   else {
-    const outra = [1, 2].find((q) => q !== c && cabe(hora, q));
-    if (!outra) { msg.textContent = `Não cabem ${fmtDur(st.dur)} a partir das ${hora}. Escolha outro horário ou menos tempo.`; msg.hidden = false; return; }
-    st.quadraEscolhida = outra;
-    msg.textContent = `A Quadra ${c} não fica livre ${fmtDur(st.dur)} seguidas a partir das ${hora}, então separamos a Quadra ${outra}.`; msg.hidden = false; msg.style.color = 'var(--muted)';
+    st.dur = null;
+    if (!livreEm(hora, menorDur(), c)) {
+      const outra = st.quadras < 2 && [1, 2].find((q) => q !== c && livreEm(hora, menorDur(), q));
+      if (outra) { st.quadraEscolhida = outra; aviso(`A Quadra ${c} não tem ${fmtDur(menorDur())} livre a partir das ${hora}, então passamos para a Quadra ${outra}.`, true); }
+      else { st.inicio = null; aviso(`Não cabe ${fmtDur(menorDur())} a partir das ${hora}. Escolha outro horário.`); }
+    }
   }
-  st.inicio = hora;
+  renderDia();
+}
+// atalho de cima: se já tem começo, aplica a duração a partir dele; senão, fica guardada para o próximo toque
+function escolherDur(m) {
+  aviso('');
+  st.durAtalho = m;
+  if (st.inicio) {
+    const c = st.quadraEscolhida || 1;
+    if (livreEm(st.inicio, m, c)) st.dur = m;
+    else aviso(`Não cabem ${fmtDur(m)} a partir das ${st.inicio}. Escolha outro horário de começo.`);
+  }
   renderDia();
 }
 
@@ -493,15 +529,18 @@ document.addEventListener('keydown', (e) => { if ($('#gal').hidden) return; if (
 // ---- barra fixa: aparece quando já escolheu tudo e o formulário ainda não está na tela
 let dadosVisivel = false;
 function atualizaBarra() {
-  const pronto = st.tipo === 'quadra' ? !!(st.data && st.dia && st.inicio) : !!(st.data && st.dia && st.espaco);
-  const mostra = pronto && !dadosVisivel && !$('#passo-escolha').hidden;
+  const pendente = st.tipo === 'quadra' && st.data && st.dia && st.inicio && !st.dur;
+  const pronto = st.tipo === 'quadra' ? !!(st.data && st.dia && st.inicio && st.dur) : !!(st.data && st.dia && st.espaco);
+  const mostra = (pronto || pendente) && !dadosVisivel && !$('#passo-escolha').hidden;
+  $('#barra-btn').hidden = !pronto;
+  if (pendente) { $('#barra-txt').innerHTML = `<b>Começa às ${st.inicio}</b><span class="pede">Toque na tabela onde termina</span>`; }
   $('#barra').hidden = !mostra; document.body.classList.toggle('com-barra', mostra);
   if (!pronto) return;
   const [, m, d] = st.data.split('-');
   if (st.tipo === 'quadra') {
     const hh = (x) => x.endsWith(':00') ? `${Number(x.slice(0, 2))}h` : x.replace(':', 'h');
     const qs = quadrasPrevistas();
-    $('#barra-txt').innerHTML = `<b>${brl(preco(st.quadras, st.dur))}</b>${qs.length ? nomeQuadras(qs) : ''} · ${d}/${m} · ${hh(st.inicio)}–${hh(somaMin(st.inicio, st.dur))}`;
+    $('#barra-txt').innerHTML = `<b>${brl(preco(st.quadras, st.dur))} · ${fmtDur(st.dur)}</b>${qs.length ? nomeQuadras(qs) : ''} · ${d}/${m} · ${hh(st.inicio)} às ${hh(somaMin(st.inicio, st.dur))}`;
   } else {
     const e = st.dia.eventos.find((x) => x.espaco === st.espaco);
     $('#barra-txt').innerHTML = `<b>${brl(e.valor)}</b>${st.espaco === 'arena' ? 'Arena toda' : 'Quiosque'} · ${d}/${m}`;
@@ -611,7 +650,7 @@ function mostrarExpirou() {
   $('#passo-expirou').hidden = false; atualizaBarra();
 }
 async function novaReserva() {
-  st.reserva = null; st.inicio = null; st.espaco = null; st.data = null; st.dia = null; st.dur = null; st.quadraEscolhida = null;
+  st.reserva = null; st.inicio = null; st.espaco = null; st.data = null; st.dia = null; st.dur = null; st.durAtalho = null; st.quadraEscolhida = null;
   ['#passo-pix', '#passo-ok', '#passo-expirou'].forEach((s) => $(s).hidden = true);
   $('#passo-escolha').hidden = false;
   $('#btn-pix').disabled = false;
