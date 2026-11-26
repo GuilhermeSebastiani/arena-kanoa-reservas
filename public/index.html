@@ -36,7 +36,16 @@ h2{font:800 15px/1.2 var(--display);text-transform:uppercase;letter-spacing:.06e
 .tabs button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
 .card{background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:16px}
 .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.cal-head b{font:800 18px var(--display);text-transform:capitalize}
+.cal-head{gap:8px}
+.mes-wrap{position:relative;flex:1;display:flex;justify-content:center}
+.mes-btn{border:0;background:var(--ink);color:var(--paper);font:900 19px var(--display);text-transform:uppercase;letter-spacing:.03em;padding:12px 22px;white-space:nowrap;border-radius:999px;cursor:pointer;box-shadow:0 3px 10px #0003;display:inline-flex;align-items:center;gap:8px;max-width:100%}
+.mes-btn::after{content:"";width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--sun)}
+.mes-lista{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);z-index:5;background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 30px #0003;padding:6px;min-width:220px;display:grid;gap:4px}
+.mes-lista button{border:0;background:transparent;text-align:left;padding:12px 14px;border-radius:10px;font:800 16px var(--display);text-transform:uppercase;color:var(--ink);cursor:pointer}
+.mes-lista button:hover{background:var(--sand)}
+.mes-lista button[aria-selected=true]{background:var(--sun);color:#fff}
+@media (max-width:420px){.mes-btn{font-size:16px;padding:11px 16px;letter-spacing:.01em}}
+.cal-card .icon-btn{background:rgba(255,255,255,.92);border-color:var(--line);width:44px;height:44px}
 .icon-btn{border:1px solid var(--line);background:var(--paper);width:40px;height:40px;border-radius:50%;font-size:18px;cursor:pointer;color:var(--ink)}
 .icon-btn:disabled{opacity:.35;cursor:default}
 .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
@@ -166,6 +175,8 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:30px 16px}
 .gal-top{display:flex;align-items:center;gap:12px;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top))}
 .gal-top b{font:800 18px var(--display);text-transform:uppercase}
 .gal-top span{color:#cbbfae;font-size:14px}
+.gal-volta{margin-left:auto;border:0;background:var(--sun);color:#fff;font:800 14px var(--body);padding:11px 16px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.gal-volta:not([hidden]) + .gal-x{margin-left:0}
 .gal-x{margin-left:auto;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:#fff;font-size:24px;cursor:pointer}
 .gal-trilho{flex:1;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior:contain}
 .gal-trilho::-webkit-scrollbar{display:none}
@@ -208,7 +219,7 @@ body.com-barra main{padding-bottom:110px}
     <div class="card cal-card" id="cal-card">
       <div class="cal-head">
         <button class="icon-btn" id="mes-ant" aria-label="Mês anterior">‹</button>
-        <b id="mes-nome"></b>
+        <div class="mes-wrap"><button type="button" class="mes-btn" id="mes-nome" aria-haspopup="listbox" aria-expanded="false"></button><div class="mes-lista" id="mes-lista" role="listbox" hidden></div></div>
         <button class="icon-btn" id="mes-prox" aria-label="Próximo mês">›</button>
       </div>
       <div class="cal" id="cal"></div>
@@ -296,7 +307,7 @@ body.com-barra main{padding-bottom:110px}
   <div class="mapa-chips" id="mapa-chips"></div>
 </div>
 <div class="gal" id="gal" hidden role="dialog" aria-modal="true" aria-labelledby="gal-nome">
-  <div class="gal-top"><div><b id="gal-nome"></b><br><span id="gal-cont"></span></div><button class="gal-x" id="gal-x" aria-label="Fechar">×</button></div>
+  <div class="gal-top"><div><b id="gal-nome"></b><br><span id="gal-cont"></span></div><button type="button" class="gal-volta" id="gal-volta" hidden>‹ Voltar ao mapa</button><button class="gal-x" id="gal-x" aria-label="Fechar">×</button></div>
   <div class="gal-trilho" id="gal-trilho"></div>
   <button class="gal-seta ant" id="gal-ant" aria-label="Foto anterior">‹</button>
   <button class="gal-seta prox" id="gal-prox" aria-label="Próxima foto">›</button>
@@ -347,8 +358,29 @@ document.querySelectorAll('.tabs button').forEach((b) => b.onclick = () => {
 $('#mes-ant').onclick = () => { st.mes--; if (st.mes < 1) { st.mes = 12; st.ano--; } carregarMes(); };
 $('#mes-prox').onclick = () => { st.mes++; if (st.mes > 12) { st.mes = 1; st.ano++; } carregarMes(); };
 
+// lista de meses que dá para reservar (de hoje até o limite de antecedência)
+function mesesAbertos() {
+  const [hy, hm] = st.cfg.hoje.split('-').map(Number);
+  const lim = new Date(`${st.cfg.hoje}T12:00:00`); lim.setDate(lim.getDate() + st.cfg.diasAntecedencia);
+  const out = []; let y = hy, m = hm;
+  while (y < lim.getFullYear() || (y === lim.getFullYear() && m <= lim.getMonth() + 1)) { out.push([y, m]); m++; if (m > 12) { m = 1; y++; } }
+  return out;
+}
+function fecharMeses() { $('#mes-lista').hidden = true; $('#mes-nome').setAttribute('aria-expanded', 'false'); }
+$('#mes-nome').onclick = (e) => {
+  e.stopPropagation();
+  const l = $('#mes-lista');
+  if (!l.hidden) return fecharMeses();
+  l.innerHTML = mesesAbertos().map(([y, m]) => `<button type="button" role="option" data-y="${y}" data-m="${m}" aria-selected="${y === st.ano && m === st.mes}">${MESES[m - 1]} ${y}</button>`).join('');
+  l.querySelectorAll('button').forEach((b) => b.onclick = () => { st.ano = Number(b.dataset.y); st.mes = Number(b.dataset.m); fecharMeses(); carregarMes(); });
+  l.hidden = false; $('#mes-nome').setAttribute('aria-expanded', 'true');
+};
+document.addEventListener('click', (e) => { if (!e.target.closest('.mes-wrap')) fecharMeses(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fecharMeses(); });
+
 async function carregarMes() {
   $('#mes-nome').textContent = `${MESES[st.mes-1]} ${st.ano}`;
+  fecharMeses();
   const j = await api(`/api/mes?ano=${st.ano}&mes=${st.mes}`);
   st.dias = j.dias;
   renderCal();
@@ -585,6 +617,7 @@ function abrirGal(pasta) {
   $('#gal-trilho').innerHTML = fs.map((f, i) => `<figure><img src="/img/galeria/${pasta}/${f}.jpg" alt="${nome}, foto ${i + 1}" ${i > 1 ? 'loading="lazy"' : ''}></figure>`).join('');
   $('#gal-pontos').innerHTML = n > 1 ? fs.map(() => '<i></i>').join('') : '';
   $('#gal-ant').hidden = $('#gal-prox').hidden = n < 2;
+  $('#gal-volta').hidden = $('#mapa').hidden;
   $('#gal').hidden = false; document.body.classList.add('travado'); $('#gal-trilho').scrollLeft = 0; galMarca(); $('#gal-x').focus();
   history.pushState({ gal: 1 }, '');
 }
@@ -592,11 +625,12 @@ function fecharGaleria(deHistorico) {
   if ($('#gal').hidden) return;
   $('#gal').hidden = true; if ($('#mapa').hidden) document.body.classList.remove('travado'); $('#gal-trilho').innerHTML = '';
   if (galOrigem) galOrigem.focus({ preventScroll: true });
-  if (!deHistorico && history.state && history.state.gal) history.back();
+  if (!deHistorico && history.state && history.state.gal) { ignorarPop = true; history.back(); }
 }
 $('#gal-trilho').addEventListener('scroll', () => { clearTimeout(galMarca.t); galMarca.t = setTimeout(galMarca, 60); });
 $('#gal-ant').onclick = () => galIr(galAtual() - 1); $('#gal-prox').onclick = () => galIr(galAtual() + 1);
 $('#gal-x').onclick = () => fecharGaleria(false);
+$('#gal-volta').onclick = () => fecharGaleria(false);
 document.addEventListener('keydown', (e) => { if ($('#gal').hidden) return; if (e.key === 'Escape') fecharGaleria(false); if (e.key === 'ArrowRight') galIr(galAtual() + 1); if (e.key === 'ArrowLeft') galIr(galAtual() - 1); });
 
 // ---- mapa da Arena Completa: foto aérea do drone com os lugares para tocar
@@ -616,11 +650,12 @@ function abrirMapa() {
 function fecharMapa(deHistorico) {
   if ($('#mapa').hidden) return;
   $('#mapa').hidden = true; if ($('#gal').hidden) document.body.classList.remove('travado');
-  if (!deHistorico && history.state && history.state.mapa) history.back();
+  if (!deHistorico && history.state && history.state.mapa) { ignorarPop = true; history.back(); }
 }
 $('#mapa-x').onclick = () => fecharMapa(false);
 // botão voltar do celular: fecha primeiro a galeria, depois o mapa
-window.addEventListener('popstate', () => { if (!$('#gal').hidden) fecharGaleria(true); else fecharMapa(true); });
+let ignorarPop = false;
+window.addEventListener('popstate', () => { if (ignorarPop) { ignorarPop = false; return; } if (!$('#gal').hidden) fecharGaleria(true); else fecharMapa(true); });
 
 // foto de fundo do calendário: quadras (aba Quadra), logo (aba Evento), e a foto do espaço escolhido
 function fundoCal() {
