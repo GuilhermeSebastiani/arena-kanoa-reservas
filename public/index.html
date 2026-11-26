@@ -41,13 +41,24 @@ h2{font:800 15px/1.2 var(--display);text-transform:uppercase;letter-spacing:.06e
 .icon-btn:disabled{opacity:.35;cursor:default}
 .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
 .cal .dw{font-size:12px;font-weight:700;color:var(--muted);text-align:center;padding:4px 0}
-.cal button{aspect-ratio:1;min-width:0;padding:0;border:1px solid transparent;border-radius:12px;background:var(--paper);font:600 15px var(--body);color:var(--ink);cursor:pointer;position:relative}
-.cal button.livre{background:#EAF3EC;border-color:#CFE5D5}
-.cal button.ocup{background:transparent;color:#B9AD99;text-decoration:line-through;cursor:not-allowed}
-.cal button.fora{background:transparent;color:#CFC4B1;cursor:default}
+.cal button{aspect-ratio:1;min-width:0;padding:0;border:2px solid transparent;border-radius:12px;background:var(--paper);font:700 16px var(--body);color:var(--ink);cursor:pointer;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;overflow:hidden}
+.cal button.livre{background:#C9EBD3;border-color:#3E9A5E;color:#0F4A27}
+.cal button.livre:hover{background:#B4E2C2}
+.cal button.ocup{background:#D6E4FA;border-color:#1E5BB8;color:#1E5BB8;cursor:not-allowed}
+.cal button.ocup .tag{font:800 6.2px/1 var(--body);letter-spacing:-.02em;text-transform:uppercase}
+@media (min-width:500px){.cal button.ocup .tag{font-size:9px}}
+.cal button.passado{background:rgba(255,255,255,.32);color:#A3957F;cursor:default}
+.cal button.passado::after{content:"";position:absolute;left:18%;right:18%;top:50%;height:2.5px;background:#8A7B66;transform:rotate(-35deg);border-radius:2px}
+.cal button.fora{background:rgba(255,255,255,.55);color:#B9AD99;cursor:default}
 .cal button.sel{background:var(--sun);color:var(--white);border-color:var(--sun)}
+/* foto de fundo do calendário (muda com Quadra / Evento / espaço escolhido) */
+.card.cal-card{position:relative;isolation:isolate;overflow:hidden}
+.card.cal-card::before{content:"";position:absolute;inset:0;z-index:-2;background:var(--fundo,none) var(--fundo-pos,center) / var(--fundo-tam,cover) no-repeat;opacity:var(--fundo-op,.0);transition:opacity .3s}
+.card.cal-card::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(255,255,255,.62),rgba(255,255,255,.5))}
+.card.cal-card.logo::after{background:none}
 .cal button .fds{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--sea)}
 .cal button.sel .fds{background:var(--white)}
+.cal button.ocup .fds{display:none}
 .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted);margin-top:10px}
 .legend i{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;margin-right:5px}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -56,9 +67,36 @@ h2{font:800 15px/1.2 var(--display);text-transform:uppercase;letter-spacing:.06e
 .chip.hora[aria-pressed=true]{background:var(--sun);border-color:var(--sun);color:var(--white)}
 .vazio{color:var(--muted);font-size:15px}
 .espacos{display:grid;gap:10px}
-.esp{display:flex;gap:14px;align-items:center;text-align:left;border:2px solid var(--line);background:var(--white);border-radius:var(--r);padding:14px;cursor:pointer;font:inherit;color:inherit;width:100%}
+.esp{display:block;text-align:left;border:2px solid var(--line);background:var(--white);border-radius:var(--r);padding:14px;cursor:pointer;font:inherit;color:inherit;width:100%;-webkit-tap-highlight-color:transparent}
+.esp .linha{display:flex;gap:12px;align-items:center}
 .esp[aria-pressed=true]{border-color:var(--sun);box-shadow:0 0 0 3px #FF6A1322}
-.esp:disabled{opacity:.5;cursor:not-allowed}
+.esp[aria-disabled=true]{opacity:.5;cursor:not-allowed}
+.esp .nome{display:flex;align-items:center;gap:8px}
+.esp .det{display:none;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);font-size:14.5px;line-height:1.45}
+.esp[aria-pressed=true] .det{display:block}
+.esp .det h4{margin:10px 0 3px;font:800 13px var(--display);text-transform:uppercase;letter-spacing:.04em;color:var(--ink)}
+.esp .det h4:first-child{margin-top:0}
+.esp .det p{margin:0;color:#4A3D2E}
+.esp .det .ver{margin-top:12px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:9px 14px;font:700 14px var(--body);color:var(--ink);cursor:pointer}
+.esp .det .ver svg{width:16px;height:16px}
+/* mapa da Arena (foto aérea com pontos clicáveis) */
+.mapa{position:fixed;inset:0;z-index:90;background:#0d0a07;color:#fff;display:flex;flex-direction:column;overflow:auto}
+.mapa-top{display:flex;align-items:center;gap:12px;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top))}
+.mapa-top b{font:800 18px var(--display);text-transform:uppercase}
+.mapa-top span{color:#cbbfae;font-size:14px}
+.mapa-rolo{overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.mapa-rolo::-webkit-scrollbar{display:none}
+.mapa-foto{position:relative;margin:0 auto;width:100%;min-width:760px;max-width:1100px}
+.mapa-dica{display:none;text-align:center;color:#cbbfae;font-size:13px;padding:8px 0 0}
+@media (max-width:760px){.mapa-dica{display:block}}
+.mapa-foto img{display:block;width:100%;height:auto}
+.ponto{position:absolute;transform:translate(-50%,-50%);border:0;background:var(--sun);color:#fff;font:800 12px var(--body);padding:7px 11px 7px 9px;border-radius:999px;box-shadow:0 2px 10px #0008;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px}
+.ponto::before{content:"";width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 0 0 #fff8;animation:pulsa 1.8s infinite}
+@keyframes pulsa{70%{box-shadow:0 0 0 8px #fff0}100%{box-shadow:0 0 0 0 #fff0}}
+.mapa-chips{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px calc(18px + env(safe-area-inset-bottom));max-width:1100px;margin:0 auto;width:100%}
+.mapa-chips p{width:100%;margin:0 0 2px;color:#cbbfae;font-size:14px}
+.mapa-chips button{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;border-radius:999px;padding:10px 14px;font:700 14px var(--body);cursor:pointer}
+.mapa-chips button[disabled]{opacity:.45;cursor:default}
 .esp b{font:800 18px var(--display);text-transform:uppercase;display:block}
 .esp small{color:var(--muted)}
 .esp .preco{margin-left:auto;text-align:right;font:800 20px var(--display);white-space:nowrap}
@@ -167,7 +205,7 @@ body.com-barra main{padding-bottom:110px}
     </div>
 
     <h2>1. Escolha o dia</h2>
-    <div class="card">
+    <div class="card cal-card" id="cal-card">
       <div class="cal-head">
         <button class="icon-btn" id="mes-ant" aria-label="Mês anterior">‹</button>
         <b id="mes-nome"></b>
@@ -175,8 +213,9 @@ body.com-barra main{padding-bottom:110px}
       </div>
       <div class="cal" id="cal"></div>
       <div class="legend">
-        <span><i style="background:#EAF3EC;border:1px solid #CFE5D5"></i>Disponível</span>
-        <span><i style="background:transparent;border:1px solid var(--line)"></i>Indisponível</span>
+        <span><i style="background:#C9EBD3;border:2px solid #3E9A5E"></i>Livre</span>
+        <span><i style="background:#D6E4FA;border:2px solid #1E5BB8"></i>Reservado</span>
+        <span><i style="background:linear-gradient(-35deg,transparent 44%,#8A7B66 44%,#8A7B66 56%,transparent 56%),#F6F1E8;border:1px solid var(--line)"></i>Já passou</span>
         <span><i style="background:var(--sea);width:6px;height:6px;border-radius:50%"></i>Fim de semana/feriado</span>
       </div>
     </div>
@@ -250,6 +289,12 @@ body.com-barra main{padding-bottom:110px}
     </div>
   </section>
 </main>
+<div class="mapa" id="mapa" hidden role="dialog" aria-modal="true" aria-labelledby="mapa-nome">
+  <div class="mapa-top"><div><b id="mapa-nome">Arena Completa</b><br><span>Toque num lugar para ver as fotos</span></div><button class="gal-x" id="mapa-x" aria-label="Fechar">×</button></div>
+  <div class="mapa-rolo" id="mapa-rolo"><div class="mapa-foto"><img src="/img/fundo/arena.jpg" alt="Vista aérea da Arena Kanoa" width="1600" height="900"><div id="mapa-pontos"></div></div></div>
+  <div class="mapa-dica">← deslize a foto para ver tudo →</div>
+  <div class="mapa-chips" id="mapa-chips"></div>
+</div>
 <div class="gal" id="gal" hidden role="dialog" aria-modal="true" aria-labelledby="gal-nome">
   <div class="gal-top"><div><b id="gal-nome"></b><br><span id="gal-cont"></span></div><button class="gal-x" id="gal-x" aria-label="Fechar">×</button></div>
   <div class="gal-trilho" id="gal-trilho"></div>
@@ -297,7 +342,7 @@ document.querySelectorAll('.tabs button').forEach((b) => b.onclick = () => {
   st.tipo = b.dataset.tipo;
   document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-pressed', x === b));
   st.inicio = null; st.espaco = null;
-  renderCal(); renderDia();
+  renderCal(); renderDia(); fundoCal();
 });
 $('#mes-ant').onclick = () => { st.mes--; if (st.mes < 1) { st.mes = 12; st.ano--; } carregarMes(); };
 $('#mes-prox').onclick = () => { st.mes++; if (st.mes > 12) { st.mes = 1; st.ano++; } carregarMes(); };
@@ -328,13 +373,16 @@ function renderCal() {
     const b = document.createElement('button');
     b.type = 'button';
     b.innerHTML = `${n}${d.aberto && d.fimDeSemana ? '<span class="fds"></span>' : ''}`;
-    if (!d.aberto) { b.className = 'fora'; b.disabled = true; }
-    else if (!diaLivre(d)) { b.className = 'ocup'; b.disabled = true; b.title = 'Indisponível'; }
+    const jaPassou = d.data < st.cfg.hoje || (d.data === st.cfg.hoje && !diaLivre(d));
+    if (jaPassou) { b.className = 'passado'; b.disabled = true; }
+    else if (!d.aberto) { b.className = 'fora'; b.disabled = true; }
+    else if (!diaLivre(d)) { b.className = 'ocup'; b.disabled = true; b.innerHTML = `${n}<span class="tag">Reservado</span>`; b.title = 'Reservado'; }
     else { b.className = 'livre' + (d.data === st.data ? ' sel' : ''); b.onclick = () => escolherDia(d.data); }
-    b.setAttribute('aria-label', `${n} de ${MESES[st.mes-1]}${b.disabled ? ', indisponível' : ''}`);
+    b.setAttribute('aria-label', `${n} de ${MESES[st.mes-1]}${b.className === 'ocup' ? ', reservado' : b.disabled ? ', indisponível' : ''}`);
     cal.appendChild(b);
   }
   if (st.data && !st.dias.some((d) => d.data === st.data && diaLivre(d))) { if (st.data.startsWith(`${st.ano}-${String(st.mes).padStart(2,'0')}`)) { st.data = null; st.dia = null; renderDia(); } }
+  fundoCal();
 }
 
 async function escolherDia(data) {
@@ -365,13 +413,23 @@ function renderDia() {
     renderGrade();
     $('#titulo-dados').textContent = '4. Seus dados';
   } else {
-    const nomes = { arena: ['Arena toda', 'Quadras, barracão, cozinha, quiosque e área verde'], quiosque: ['Quiosque', st.dia.fimDeSemana ? 'Espaço do quiosque' : 'Espaço do quiosque · a partir das 17h'] };
-    $('#espacos').innerHTML = st.dia.eventos.map((e) => `
-      <button type="button" class="esp" data-esp="${e.espaco}" aria-pressed="${e.espaco===st.espaco}" ${e.livre ? '' : 'disabled'}>
-        <div><b>${nomes[e.espaco][0]}</b><small>${e.livre ? nomes[e.espaco][1] : 'Indisponível nesta data'}</small></div>
-        <div class="preco">${brl(e.valor)}${e.sinal < e.valor ? `<small>sinal de ${brl(e.sinal)} no PIX</small>` : ''}</div>
-      </button>`).join('');
-    document.querySelectorAll('.esp').forEach((b) => b.onclick = () => { st.espaco = b.dataset.esp; renderDia(); });
+    $('#espacos').innerHTML = st.dia.eventos.map((e) => {
+      const info = ESPACOS[e.espaco];
+      const sub = !e.livre ? 'Indisponível nesta data' : e.espaco === 'quiosque' && !st.dia.fimDeSemana ? `${info.sub} · a partir das 17h` : info.sub;
+      return `<div class="esp" role="button" tabindex="${e.livre ? 0 : -1}" data-esp="${e.espaco}" aria-pressed="${e.espaco===st.espaco}" aria-disabled="${!e.livre}">
+        <div class="linha">
+          <div><div class="nome"><b>${info.nome}</b><button type="button" class="foto-btn" data-ver="${e.espaco}" aria-label="Ver fotos: ${info.nome}">${ICONE_FOTO}</button></div><small>${sub}</small></div>
+          <div class="preco">${brl(e.valor)}${e.sinal < e.valor ? `<small>sinal de ${brl(e.sinal)} no PIX</small>` : ''}</div>
+        </div>
+        <div class="det">${info.det}<button type="button" class="ver" data-ver="${e.espaco}">${ICONE_FOTO} ${e.espaco === 'arena' ? 'Ver a Arena de cima e as fotos' : 'Ver fotos do quiosque'}</button></div>
+      </div>`;
+    }).join('');
+    document.querySelectorAll('.esp').forEach((el) => {
+      const escolher = () => { if (el.getAttribute('aria-disabled') === 'true') return; st.espaco = el.dataset.esp; renderDia(); fundoCal(); };
+      el.onclick = escolher;
+      el.onkeydown = (ev) => { if (ev.target === el && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); escolher(); } };
+    });
+    document.querySelectorAll('.esp [data-ver]').forEach((bt) => bt.onclick = (ev) => { ev.stopPropagation(); bt.dataset.ver === 'arena' ? abrirMapa() : abrirGal('quiosque'); });
     $('#titulo-dados').textContent = '3. Seus dados';
   }
   const pronto = st.tipo === 'quadra' ? !!(st.inicio && st.dur) : !!st.espaco;
@@ -414,7 +472,22 @@ function cabe(hora, c) {
 }
 const cabeTodas = (hora) => st.quadras >= 2 ? [1, 2].every((c) => cabe(hora, c)) : [1, 2].some((c) => cabe(hora, c));
 
-const FOTOS = { 1: ['01', '02', '03', '04'], 2: ['01', '02', '03'] };
+const GALERIAS = {
+  q1: ['Quadra 1', 4], q2: ['Quadra 2', 3], quadras: ['Quadras de areia', 8], quiosque: ['Quiosque', 3], barracao: ['Barracão', 5],
+  cozinha: ['Cozinha', 3], campo: ['Campo de futebol suíço', 2], parquinho: ['Parquinho', 1], banheiros: ['Banheiros', 2], gramado: ['Gramado e estacionamento', 7],
+};
+const li = (t) => `<p>${t}</p>`;
+const ESPACOS = {
+  arena: { nome: 'Arena Completa', sub: 'Toda a estrutura liberada para o seu evento', det:
+    '<h4>Cozinha completa</h4>' + li('Fogão industrial, fogão caipira e forno a lenha · churrasqueira grande (mais de 10 espetos e grelha) com bancada exclusiva · 2 pias · mesa e bancada auxiliares · geladeira e cervejeira 0 grau · pratos, panelas, bacias e talheres') +
+    '<h4>Despensa</h4>' + li('25 jogos de mesa (100 cadeiras) · 2 brinquedos infláveis: escorregador grande e castelinho para os menores · raquetes e bolinhas de beach tennis · bola de futebol · mesa de ping-pong') +
+    '<h4>Barracão</h4>' + li('20×20 m coberto, com estrutura para até 100 pessoas') +
+    '<h4>Esporte e lazer</h4>' + li('2 quadras de areia cobertas · campo de futebol suíço · parquinho coberto com cama elástica, balanços, escorregadores e playground de madeira com casinha, ponte e rede de escalada') +
+    '<h4>E mais</h4>' + li('Quiosque completo · banheiros masculino e feminino com fraldário e chuveiro · estacionamento empedrado e amplo gramado com redário') },
+  quiosque: { nome: 'Quiosque', sub: 'Para festas menores', det:
+    '<h4>O quiosque conta com</h4>' + li('Churrasqueira com 5 espetos e grelha · pia · mesa de madeira grande (3 m) · 5 jogos de mesa de plástico (20 cadeiras)') +
+    '<h4>Acesso liberado</h4>' + li('Quadras de areia, campo de futebol e parquinho') },
+};
 const ICONE_FOTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 function renderGrade() {
   const g = st.dia.grade; const sel = quadrasPrevistas();
@@ -504,25 +577,63 @@ let galN = 0, galOrigem = null;
 const galAtual = () => Math.round($('#gal-trilho').scrollLeft / $('#gal-trilho').clientWidth);
 function galMarca() { const i = galAtual(); $('#gal-cont').textContent = `${i + 1} de ${galN}`; [...$('#gal-pontos').children].forEach((p, k) => p.className = k === i ? 'on' : ''); $('#gal-ant').disabled = i <= 0; $('#gal-prox').disabled = i >= galN - 1; }
 const galIr = (i) => $('#gal-trilho').scrollTo({ left: i * $('#gal-trilho').clientWidth, behavior: 'smooth' });
-function abrirGaleria(c) {
-  const fs = FOTOS[c]; galN = fs.length; galOrigem = document.activeElement;
-  $('#gal-nome').textContent = `Quadra ${c}`;
-  $('#gal-trilho').innerHTML = fs.map((f, i) => `<figure><img src="/img/galeria/q${c}/${f}.jpg" alt="Quadra ${c}, foto ${i + 1}"></figure>`).join('');
-  $('#gal-pontos').innerHTML = fs.map(() => '<i></i>').join('');
+const abrirGaleria = (c) => abrirGal(`q${c}`);
+function abrirGal(pasta) {
+  const [nome, n] = GALERIAS[pasta]; galN = n; galOrigem = document.activeElement;
+  const fs = Array.from({ length: n }, (_, i) => String(i + 1).padStart(2, '0'));
+  $('#gal-nome').textContent = nome;
+  $('#gal-trilho').innerHTML = fs.map((f, i) => `<figure><img src="/img/galeria/${pasta}/${f}.jpg" alt="${nome}, foto ${i + 1}" ${i > 1 ? 'loading="lazy"' : ''}></figure>`).join('');
+  $('#gal-pontos').innerHTML = n > 1 ? fs.map(() => '<i></i>').join('') : '';
+  $('#gal-ant').hidden = $('#gal-prox').hidden = n < 2;
   $('#gal').hidden = false; document.body.classList.add('travado'); $('#gal-trilho').scrollLeft = 0; galMarca(); $('#gal-x').focus();
   history.pushState({ gal: 1 }, '');
 }
 function fecharGaleria(deHistorico) {
   if ($('#gal').hidden) return;
-  $('#gal').hidden = true; document.body.classList.remove('travado'); $('#gal-trilho').innerHTML = '';
+  $('#gal').hidden = true; if ($('#mapa').hidden) document.body.classList.remove('travado'); $('#gal-trilho').innerHTML = '';
   if (galOrigem) galOrigem.focus({ preventScroll: true });
   if (!deHistorico && history.state && history.state.gal) history.back();
 }
 $('#gal-trilho').addEventListener('scroll', () => { clearTimeout(galMarca.t); galMarca.t = setTimeout(galMarca, 60); });
 $('#gal-ant').onclick = () => galIr(galAtual() - 1); $('#gal-prox').onclick = () => galIr(galAtual() + 1);
 $('#gal-x').onclick = () => fecharGaleria(false);
-window.addEventListener('popstate', () => fecharGaleria(true));
 document.addEventListener('keydown', (e) => { if ($('#gal').hidden) return; if (e.key === 'Escape') fecharGaleria(false); if (e.key === 'ArrowRight') galIr(galAtual() + 1); if (e.key === 'ArrowLeft') galIr(galAtual() - 1); });
+
+// ---- mapa da Arena Completa: foto aérea do drone com os lugares para tocar
+const PONTOS = [
+  { g: 'quadras', t: 'Quadras de areia', x: 55, y: 36 }, { g: 'barracao', t: 'Barracão', x: 11, y: 28 },
+  { g: 'quiosque', t: 'Quiosque', x: 75, y: 46 }, { g: 'gramado', t: 'Gramado', x: 46, y: 74 }, { g: 'gramado', t: 'Estacionamento', x: 12, y: 70 },
+];
+const OUTROS = [['cozinha', 'Cozinha'], ['banheiros', 'Banheiros'], ['campo', 'Campo de futebol'], ['parquinho', 'Parquinho'], [null, 'Despensa (fotos em breve)']];
+function abrirMapa() {
+  $('#mapa-pontos').innerHTML = PONTOS.map((p) => `<button type="button" class="ponto" style="left:${p.x}%;top:${p.y}%" data-g="${p.g}">${p.t}</button>`).join('');
+  $('#mapa-chips').innerHTML = '<p>Outros lugares:</p>' + OUTROS.map(([g, t]) => `<button type="button" ${g ? `data-g="${g}"` : 'disabled'}>${t}</button>`).join('');
+  document.querySelectorAll('#mapa [data-g]').forEach((b) => b.onclick = () => abrirGal(b.dataset.g));
+  $('#mapa').hidden = false; document.body.classList.add('travado'); $('#mapa-x').focus();
+  const r = $('#mapa-rolo'); r.scrollLeft = (r.scrollWidth - r.clientWidth) / 2;
+  history.pushState({ mapa: 1 }, '');
+}
+function fecharMapa(deHistorico) {
+  if ($('#mapa').hidden) return;
+  $('#mapa').hidden = true; if ($('#gal').hidden) document.body.classList.remove('travado');
+  if (!deHistorico && history.state && history.state.mapa) history.back();
+}
+$('#mapa-x').onclick = () => fecharMapa(false);
+// botão voltar do celular: fecha primeiro a galeria, depois o mapa
+window.addEventListener('popstate', () => { if (!$('#gal').hidden) fecharGaleria(true); else fecharMapa(true); });
+
+// foto de fundo do calendário: quadras (aba Quadra), logo (aba Evento), e a foto do espaço escolhido
+function fundoCal() {
+  const card = $('#cal-card'); if (!card) return;
+  let f = null, pos = 'center', tam = 'cover', op = .9, logo = false;
+  if (st.tipo === 'quadra') f = '/img/fundo/quadras.jpg';
+  else if (st.espaco === 'arena') f = '/img/fundo/arena.jpg';
+  else if (st.espaco === 'quiosque') { f = '/img/fundo/quiosque.jpg'; pos = '75% 50%'; }
+  else { f = '/logo.png'; tam = 'min(70%, 420px) auto'; op = .13; logo = true; }
+  card.style.setProperty('--fundo', `url('${f}')`); card.style.setProperty('--fundo-pos', pos);
+  card.style.setProperty('--fundo-tam', tam); card.style.setProperty('--fundo-op', op);
+  card.classList.toggle('logo', logo);
+}
 
 // ---- barra fixa: aparece quando já escolheu tudo e o formulário ainda não está na tela
 let dadosVisivel = false;
@@ -541,7 +652,7 @@ function atualizaBarra() {
     $('#barra-txt').innerHTML = `<b>${brl(preco(st.quadras, st.dur))} · ${fmtDur(st.dur)}</b>${qs.length ? nomeQuadras(qs) : ''} · ${d}/${m} · ${hh(st.inicio)} às ${hh(somaMin(st.inicio, st.dur))}`;
   } else {
     const e = st.dia.eventos.find((x) => x.espaco === st.espaco);
-    $('#barra-txt').innerHTML = `<b>${brl(e.valor)}</b>${st.espaco === 'arena' ? 'Arena toda' : 'Quiosque'} · ${d}/${m}`;
+    $('#barra-txt').innerHTML = `<b>${brl(e.valor)}</b>${st.espaco === 'arena' ? 'Arena Completa' : 'Quiosque'} · ${d}/${m}`;
   }
 }
 $('#barra-btn').onclick = () => { $('#bloco-dados').scrollIntoView({ behavior: 'smooth', block: 'start' }); setTimeout(() => $('#nome').focus({ preventScroll: true }), 450); };
@@ -554,7 +665,7 @@ function linhasResumo() {
     return { html: `<div><b>${fmtData(st.data)}</b></div><div>${qs.length ? nomeQuadras(qs) : `${st.quadras} quadra${st.quadras>1?'s':''}`} · ${st.inicio} às ${somaMin(st.inicio, st.dur)} (${fmtDur(st.dur)})</div><div class="total">${brl(v)}</div>`, pix: v };
   }
   const e = st.dia.eventos.find((x) => x.espaco === st.espaco);
-  const nome = st.espaco === 'arena' ? 'Arena toda' : 'Quiosque';
+  const nome = st.espaco === 'arena' ? 'Arena Completa' : 'Quiosque';
   const sinal = e.sinal < e.valor;
   return { html: `<div><b>${fmtData(st.data)}</b></div><div>Evento · ${nome}</div><div class="total">${brl(e.valor)}</div>${sinal ? `<div class="nota">Agora você paga o sinal de <b>${brl(e.sinal)}</b> para garantir a data. O restante (${brl(e.valor - e.sinal)}) é pago no dia do evento.</div>` : ''}`, pix: e.sinal };
 }
@@ -586,7 +697,7 @@ $('#btn-pix').onclick = async () => {
 
 function resumoReserva(r) {
   const quando = `<div><b>${fmtData(r.data)}</b></div>`;
-  const oque = r.tipo === 'quadra' ? `<div>${r.quadrasNum ? nomeQuadras(r.quadrasNum.split(',')) : `${r.quadras} quadra${r.quadras>1?'s':''}`} · ${r.inicio} às ${r.fim}</div>` : `<div>Evento · ${r.espaco === 'arena' ? 'Arena toda' : 'Quiosque'}</div>`;
+  const oque = r.tipo === 'quadra' ? `<div>${r.quadrasNum ? nomeQuadras(r.quadrasNum.split(',')) : `${r.quadras} quadra${r.quadras>1?'s':''}`} · ${r.inicio} às ${r.fim}</div>` : `<div>Evento · ${r.espaco === 'arena' ? 'Arena Completa' : 'Quiosque'}</div>`;
   const val = r.valorPix < r.valor ? `<div>Sinal: <b>${brl(r.valorPix)}</b> · restante ${brl(r.valor - r.valorPix)} no dia</div>` : `<div>Valor: <b>${brl(r.valor)}</b></div>`;
   return quando + oque + val;
 }
