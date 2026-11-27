@@ -15,7 +15,7 @@ const DEFAULTS = {
     arena: { semana: 1000, fimDeSemana: 'salarioMinimo' },
     quiosque: { semana: 400, fimDeSemana: 700 },
   },
-  sinalEventoPct: 50,       // % do valor do evento cobrado no PIX para garantir a data
+  sinalEventoPct: 20,       // % do valor do evento cobrado no PIX para garantir a data (quadra paga 100%)
   feriados: [
     '2026-11-02', '2026-11-15', '2026-11-20', '2026-12-25',
     '2027-01-01', '2027-03-26', '2027-04-21', '2027-05-01', '2027-05-27',

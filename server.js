@@ -194,7 +194,7 @@ async function criarReservaSite(body, ip) {
     const [y, m, d] = data.split('-');
     const desc = tipo === 'quadra'
       ? `Arena Kanoa - ${r.quadras} quadra(s) ${d}/${m} ${r.inicio}-${r.fim}`
-      : `Arena Kanoa - evento (${r.espaco === 'arena' ? 'arena toda' : 'quiosque'}) ${d}/${m}/${y}${r.valor_pix < r.valor ? ' - sinal' : ''}`;
+      : `Arena Kanoa - evento (${r.espaco === 'arena' ? 'Arena Completa' : 'quiosque'}) ${d}/${m}/${y}${r.valor_pix < r.valor ? ' - sinal' : ''}`;
 
     const pix = await mp.criarPix({
       reservaId: r.id, valor: r.valor_pix, descricao: desc, nome,
@@ -473,6 +473,12 @@ async function rotear(req, res) {
       else if (b.acao === 'confirmar') await db.run("UPDATE reservas SET status = 'confirmada', pago_em = COALESCE(pago_em, $1) WHERE id = $2", [agoraISO(), r.id]);
       else if (b.acao === 'simular_pago' && mp.modoTeste()) await aplicarPagamento(r, { status: 'approved', pagoEm: agoraISO() });
       else if (b.acao === 'obs') await db.run('UPDATE reservas SET obs = $1 WHERE id = $2', [String(b.obs || '').slice(0, 400), r.id]);
+      else if (b.acao === 'valor') {
+        // valor combinado / desconto depois da reserva feita (não mexe no que já foi pago de sinal)
+        const v = L.round2(Number(String(b.valor).replace(',', '.')));
+        if (!(v >= 0) || v > 100000) return erro(res, 400, 'Valor inválido.');
+        await db.run('UPDATE reservas SET valor = $1 WHERE id = $2', [v, r.id]);
+      }
       else return erro(res, 400, 'Ação inválida.');
       return send(res, 200, { ok: true });
     }

@@ -132,8 +132,8 @@ textarea{min-height:120px;font:13px ui-monospace,Menlo,monospace}
         </div>
         <div class="grid2">
           <div id="n-q-box"><label>Quadra</label><select id="n-q"><option value="auto">1 quadra · automática (Quadra 1 se livre)</option><option value="1">Quadra 1</option><option value="2">Quadra 2</option><option value="1,2">As duas quadras</option></select></div>
-          <div id="n-esp-box" hidden><label>Espaço</label><select id="n-esp"><option value="arena">Arena toda</option><option value="quiosque">Quiosque</option><option value="tudo">Tudo (bloqueia o dia)</option></select></div>
-          <div><label>Valor (R$) <small class="vazio">vazio = tabela</small></label><input type="number" step="0.01" id="n-valor"></div>
+          <div id="n-esp-box" hidden><label>Espaço</label><select id="n-esp"><option value="arena">Arena Completa</option><option value="quiosque">Quiosque</option><option value="tudo">Tudo (bloqueia o dia)</option></select></div>
+          <div><label>Valor combinado (R$) <small class="vazio">vazio = preço da tabela</small></label><input type="number" step="0.01" id="n-valor"></div>
         </div>
         <div class="grid2">
           <div><label>Responsável</label><input id="n-resp"></div>
@@ -186,8 +186,8 @@ textarea{min-height:120px;font:13px ui-monospace,Menlo,monospace}
           <div><label>Fecha</label><input type="time" id="c-fecha" step="1800"></div>
         </div>
         <div class="grid2">
-          <div><label>Arena toda · dia de semana</label><input type="number" id="c-a-sem"></div>
-          <div><label>Arena toda · fim de semana/feriado <small class="vazio">0 = salário mínimo</small></label><input type="number" id="c-a-fds"></div>
+          <div><label>Arena Completa · dia de semana</label><input type="number" id="c-a-sem"></div>
+          <div><label>Arena Completa · fim de semana/feriado <small class="vazio">0 = salário mínimo</small></label><input type="number" id="c-a-fds"></div>
         </div>
         <div class="grid2">
           <div><label>Quiosque · dia de semana</label><input type="number" id="c-q-sem"></div>
@@ -301,13 +301,14 @@ async function carregarAgenda() {
   bindAcoes();
 }
 function itemReserva(r) {
-  const tipo = r.tipo === 'evento' ? `Evento · ${r.espaco === 'arena' ? 'arena toda' : 'quiosque'}` : r.tipo === 'bloqueio' ? `Bloqueio${r.espaco==='tudo'?' · dia todo':r.quadras_num ? ' · ' + nomeQ(r.quadras_num) : ''}` : (r.quadras_num ? nomeQ(r.quadras_num) : `${r.quadras} quadra${r.quadras>1?'s':''}`);
+  const tipo = r.tipo === 'evento' ? `Evento · ${r.espaco === 'arena' ? 'Arena Completa' : 'quiosque'}` : r.tipo === 'bloqueio' ? `Bloqueio${r.espaco==='tudo'?' · dia todo':r.quadras_num ? ' · ' + nomeQ(r.quadras_num) : ''}` : (r.quadras_num ? nomeQ(r.quadras_num) : `${r.quadras} quadra${r.quadras>1?'s':''}`);
   const hora = r.inicio ? `${r.inicio}–${r.fim}` : 'dia todo';
   const inativo = ['cancelada','expirada'].includes(r.status);
   const pago = r.valor_pix && r.valor_pix < r.valor ? ` · sinal ${brl(r.valor_pix)}` : '';
   const acoes = [];
   if (['pendente','expirada'].includes(r.status)) acoes.push(`<button class="b pri" data-acao="confirmar" data-id="${r.id}">Marcar pago</button>`);
   if (r.status === 'pendente' && $('#aviso-teste').hidden === false && r.origem === 'site') acoes.push(`<button class="b" data-acao="simular_pago" data-id="${r.id}">Simular PIX</button>`);
+  if (!['cancelada'].includes(r.status) && r.tipo !== 'bloqueio') acoes.push(`<button class="b" data-editar-valor="${r.id}" data-valor="${r.valor}">Editar valor</button>`);
   if (!['cancelada'].includes(r.status)) acoes.push(`<button class="b dan" data-acao="cancelar" data-id="${r.id}">Cancelar</button>`);
   return `<div class="item ${inativo ? 'riscado' : ''}">
     <div class="hora">${hora}</div>
@@ -324,6 +325,13 @@ function itemFixo(f) {
     <div class="acoes">${f.cedeAoEvento ? '' : `<button class="b" data-fixo="${f.fixoId}" data-data="${f.data}" data-cancelar="${!f.cancelado}">${f.cancelado ? 'Reativar' : 'Cancelar neste dia'}</button>`}</div></div>`;
 }
 function bindAcoes(depois = carregarAgenda) {
+  document.querySelectorAll('[data-editar-valor]').forEach((b) => b.onclick = async () => {
+    const atual = Number(b.dataset.valor).toFixed(2).replace('.', ',');
+    const novo = prompt('Novo valor da reserva (R$). Use para preço combinado ou desconto:', atual);
+    if (novo === null || novo.trim() === '' || novo.trim() === atual) return;
+    try { await api(`/admin/api/reservas/${b.dataset.editarValor}`, { method: 'POST', body: JSON.stringify({ acao: 'valor', valor: novo.trim().replace(/\./g, '').replace(',', '.') }) }); depois(); }
+    catch (er) { alert(er.message); }
+  });
   document.querySelectorAll('[data-acao]').forEach((b) => b.onclick = async () => {
     if (b.dataset.acao === 'cancelar' && !confirm('Cancelar esta reserva? O horário fica livre de novo.')) return;
     await api(`/admin/api/reservas/${b.dataset.id}`, { method: 'POST', body: JSON.stringify({ acao: b.dataset.acao }) });
