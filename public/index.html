@@ -44,6 +44,14 @@ h2{font:800 15px/1.2 var(--display);text-transform:uppercase;letter-spacing:.06e
 .tabs button[aria-pressed=true]{background:var(--sun);border-color:var(--sun);color:#fff;box-shadow:0 6px 18px #FF6A1355}
 .tabs button[aria-pressed=true] small{color:#FFE8D9}
 .tabs button[aria-pressed=false]{border-color:#CDB994}
+.sub-esp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;position:relative}
+.sub-esp::before{content:"";position:absolute;top:-8px;right:25%;transform:translateX(50%);border:8px solid transparent;border-top:0;border-bottom-color:#CDB994}
+.sub-esp button{border:2px solid #CDB994;background:var(--white);border-radius:14px;padding:10px 8px;cursor:pointer;color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:1px;-webkit-tap-highlight-color:transparent}
+.sub-esp button b{font:900 16px var(--display);text-transform:uppercase}
+.sub-esp button small{font:500 12px var(--body);color:var(--muted)}
+.sub-esp button[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.sub-esp button[aria-pressed=true] small{color:#E9DCC6}
+.sub-esp button:active{transform:scale(.97)}
 .card{background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:16px}
 .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .cal-head{gap:8px}
@@ -231,6 +239,10 @@ body.com-barra main{padding-bottom:110px}
         <b>Evento</b><small>Aniversários, casamentos e churrasco com os amigos</small>
       </button>
     </div>
+    <div class="sub-esp" id="sub-esp" role="group" aria-label="Qual espaço" hidden>
+      <button type="button" data-pre="arena" aria-pressed="false"><b>Arena Completa</b><small>Toda a estrutura</small></button>
+      <button type="button" data-pre="quiosque" aria-pressed="false"><b>Quiosque</b><small>Festas menores</small></button>
+    </div>
 
     <h2>1. Escolha o dia</h2>
     <div class="card cal-card" id="cal-card">
@@ -341,7 +353,7 @@ const fmtDur = (m) => m % 60 ? `${Math.floor(m/60)}h${m%60}` : `${m/60}h`;
 const fmtData = (d) => { const [y,m,dd] = d.split('-'); const w = new Date(`${d}T12:00:00`).toLocaleDateString('pt-BR',{weekday:'long'}); return `${w}, ${dd}/${m}/${y}`; };
 const somaMin = (hhmm, min) => { const [h,m] = hhmm.split(':').map(Number); const t = h*60+m+min; return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`; };
 
-const st = { quadraEscolhida: null, tipo: 'quadra', cfg: null, ano: 0, mes: 0, dias: [], data: null, dia: null, dur: null, quadras: 1, inicio: null, espaco: null, reserva: null };
+const st = { espacoPref: null, quadraEscolhida: null, tipo: 'quadra', cfg: null, ano: 0, mes: 0, dias: [], data: null, dia: null, dur: null, quadras: 1, inicio: null, espaco: null, reserva: null };
 const guarda = { get(){ try { return localStorage.getItem('arena_reserva'); } catch { return null; } }, set(v){ try { v ? localStorage.setItem('arena_reserva', v) : localStorage.removeItem('arena_reserva'); } catch {} } };
 
 async function api(url, opts) {
@@ -358,6 +370,8 @@ async function iniciar() {
   st.ano = y; st.mes = m;
   const qp = new URLSearchParams(location.search);
   if (qp.get('tipo') === 'evento') { st.tipo = 'evento'; document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-pressed', x.dataset.tipo === 'evento')); }
+  if (['arena', 'quiosque'].includes(qp.get('espaco'))) st.espacoPref = qp.get('espaco');
+  subEsp();
   const qData = /^\d{4}-\d{2}-\d{2}$/.test(qp.get('data') || '') ? qp.get('data') : null;
   if (qData) { st.ano = Number(qData.slice(0, 4)); st.mes = Number(qData.slice(5, 7)); }
   const pend = guarda.get();
@@ -370,6 +384,7 @@ document.querySelectorAll('.tabs button').forEach((b) => b.onclick = () => {
   st.tipo = b.dataset.tipo;
   document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-pressed', x === b));
   st.inicio = null; st.espaco = null;
+  subEsp();
   renderCal(); renderDia(); fundoCal();
 });
 $('#mes-ant').onclick = () => { st.mes--; if (st.mes < 1) { st.mes = 12; st.ano--; } carregarMes(); };
@@ -405,7 +420,8 @@ async function carregarMes() {
 
 function diaLivre(d) {
   if (!d.aberto) return false;
-  return st.tipo === 'quadra' ? d.quadra : (d.arena || d.quiosque);
+  if (st.tipo === 'quadra') return d.quadra;
+  return st.espacoPref ? d[st.espacoPref] : (d.arena || d.quiosque);
 }
 
 function renderCal() {
@@ -438,6 +454,7 @@ async function escolherDia(data) {
   st.data = data; st.inicio = null; st.espaco = null;
   renderCal();
   await carregarDia();
+  if (st.tipo === 'evento' && st.espacoPref && st.dia && st.dia.eventos.some((e) => e.espaco === st.espacoPref && e.livre)) { st.espaco = st.espacoPref; renderDia(); }
   (st.tipo === 'quadra' ? $('#bloco-quadra') : $('#bloco-evento')).scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -474,7 +491,7 @@ function renderDia() {
       </div>`;
     }).join('');
     document.querySelectorAll('.esp').forEach((el) => {
-      const escolher = () => { if (el.getAttribute('aria-disabled') === 'true') return; st.espaco = el.dataset.esp; renderDia(); fundoCal(); };
+      const escolher = () => { if (el.getAttribute('aria-disabled') === 'true') return; st.espaco = el.dataset.esp; st.espacoPref = st.espaco; subEsp(); renderDia(); renderCal(); };
       el.onclick = escolher;
       el.onkeydown = (ev) => { if (ev.target === el && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); escolher(); } };
     });
@@ -674,13 +691,28 @@ $('#mapa-x').onclick = () => fecharMapa(false);
 let ignorarPop = false;
 window.addEventListener('popstate', () => { if (ignorarPop) { ignorarPop = false; return; } if (!$('#gal').hidden) fecharGaleria(true); else fecharMapa(true); });
 
+// botões Arena Completa / Quiosque logo abaixo de Evento
+function subEsp() {
+  $('#sub-esp').hidden = st.tipo !== 'evento';
+  document.querySelectorAll('#sub-esp button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.pre === st.espacoPref));
+}
+document.querySelectorAll('#sub-esp button').forEach((b) => b.onclick = () => {
+  st.espacoPref = b.dataset.pre;
+  // se já tem dia escolhido e o espaço está livre nele, marca; senão, limpa o dia
+  if (st.data && st.dia) {
+    const e = st.dia.eventos.find((x) => x.espaco === st.espacoPref);
+    if (e && e.livre) st.espaco = st.espacoPref; else { st.espaco = null; st.data = null; st.dia = null; }
+  }
+  subEsp(); renderCal(); renderDia(); fundoCal();
+});
+
 // foto de fundo do calendário: quadras (aba Quadra), logo (aba Evento), e a foto do espaço escolhido
 function fundoCal() {
   const card = $('#cal-card'); if (!card) return;
   let f = null, pos = 'center', tam = 'cover', op = .9, logo = false;
   if (st.tipo === 'quadra') f = '/img/fundo/quadras.jpg';
-  else if (st.espaco === 'arena') f = '/img/fundo/arena.jpg';
-  else if (st.espaco === 'quiosque') { f = '/img/fundo/quiosque.jpg'; pos = '75% 50%'; }
+  else if ((st.espaco || st.espacoPref) === 'arena') f = '/img/fundo/arena.jpg';
+  else if ((st.espaco || st.espacoPref) === 'quiosque') { f = '/img/fundo/quiosque.jpg'; pos = '75% 50%'; }
   else { f = '/logo.png'; tam = 'min(70%, 420px) auto'; op = .13; logo = true; }
   card.style.setProperty('--fundo', `url('${f}')`); card.style.setProperty('--fundo-pos', pos);
   card.style.setProperty('--fundo-tam', tam); card.style.setProperty('--fundo-op', op);
