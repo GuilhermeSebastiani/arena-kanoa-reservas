@@ -104,6 +104,8 @@ h2{font:800 15px/1.2 var(--display);text-transform:uppercase;letter-spacing:.06e
 .esp .det h4{margin:10px 0 3px;font:800 13px var(--display);text-transform:uppercase;letter-spacing:.04em;color:var(--ink)}
 .esp .det h4:first-child{margin-top:0}
 .esp .det p{margin:0;color:#4A3D2E}
+.esp .det .sinal-info,.nota-sinal{margin-top:12px;background:#FFF4D6;border:1px solid #F0D58A;color:#5E4500;border-radius:10px;padding:9px 12px;font-size:13.5px;line-height:1.4}
+.esp .det .sinal-info b{display:inline;font:700 13.5px var(--body);text-transform:none;color:#5E4500}
 .esp .det .ver{margin-top:12px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:9px 14px;font:700 14px var(--body);color:var(--ink);cursor:pointer}
 .esp .det .ver svg{width:16px;height:16px}
 /* mapa da Arena (foto aérea com pontos clicáveis) */
@@ -487,7 +489,7 @@ function renderDia() {
           <div><div class="nome"><b>${info.nome}</b><button type="button" class="foto-btn" data-ver="${e.espaco}" aria-label="Ver fotos: ${info.nome}">${ICONE_FOTO}</button></div><small>${sub}</small></div>
           <div class="preco">${brl(e.valor)}${e.sinal < e.valor ? `<small>sinal de ${brl(e.sinal)} no PIX</small>` : ''}</div>
         </div>
-        <div class="det">${info.det}<button type="button" class="ver" data-ver="${e.espaco}">${ICONE_FOTO} ${e.espaco === 'arena' ? 'Ver a Arena de cima e as fotos' : 'Ver fotos do quiosque'}</button></div>
+        <div class="det">${info.det}${e.sinal < e.valor ? `<p class="sinal-info">Para garantir a data você paga <b>${Math.round(e.sinal / e.valor * 100)}% de sinal</b> no PIX e o restante no dia. Como a data fica reservada só para você, o sinal não é devolvido em caso de cancelamento.</p>` : ''}<button type="button" class="ver" data-ver="${e.espaco}">${ICONE_FOTO} ${e.espaco === 'arena' ? 'Ver a Arena de cima e as fotos' : 'Ver fotos do quiosque'}</button></div>
       </div>`;
     }).join('');
     document.querySelectorAll('.esp').forEach((el) => {
@@ -751,7 +753,7 @@ function linhasResumo() {
   const e = st.dia.eventos.find((x) => x.espaco === st.espaco);
   const nome = st.espaco === 'arena' ? 'Arena Completa' : 'Quiosque';
   const sinal = e.sinal < e.valor;
-  return { html: `<div><b>${fmtData(st.data)}</b></div><div>Evento · ${nome}</div><div class="total">${brl(e.valor)}</div>${sinal ? `<div class="nota">Agora você paga o sinal de <b>${brl(e.sinal)}</b> para garantir a data. O restante (${brl(e.valor - e.sinal)}) é pago no dia do evento.</div>` : ''}`, pix: e.sinal };
+  return { html: `<div><b>${fmtData(st.data)}</b></div><div>Evento · ${nome}</div><div class="total">${brl(e.valor)}</div>${sinal ? `<div class="nota">Agora você paga o sinal de <b>${brl(e.sinal)}</b> para garantir a data. O restante (${brl(e.valor - e.sinal)}) é pago no dia do evento.</div><div class="nota nota-sinal">Como a data fica reservada só para você, o sinal não é devolvido em caso de cancelamento.</div>` : ''}`, pix: e.sinal };
 }
 function renderResumo() {
   const r = linhasResumo();
@@ -782,7 +784,7 @@ $('#btn-pix').onclick = async () => {
 function resumoReserva(r) {
   const quando = `<div><b>${fmtData(r.data)}</b></div>`;
   const oque = r.tipo === 'quadra' ? `<div>${r.quadrasNum ? nomeQuadras(r.quadrasNum.split(',')) : `${r.quadras} quadra${r.quadras>1?'s':''}`} · ${r.inicio} às ${r.fim}</div>` : `<div>Evento · ${r.espaco === 'arena' ? 'Arena Completa' : 'Quiosque'}</div>`;
-  const val = r.valorPix < r.valor ? `<div>Sinal: <b>${brl(r.valorPix)}</b> · restante ${brl(r.valor - r.valorPix)} no dia</div>` : `<div>Valor: <b>${brl(r.valor)}</b></div>`;
+  const val = r.valorPix < r.valor ? `<div>Sinal: <b>${brl(r.valorPix)}</b> · restante ${brl(r.valor - r.valorPix)} no dia</div><div class="nota nota-sinal">Como a data fica reservada só para você, o sinal não é devolvido em caso de cancelamento.</div>` : `<div>Valor: <b>${brl(r.valor)}</b></div>`;
   return quando + oque + val;
 }
 
